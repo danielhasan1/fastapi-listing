@@ -1,0 +1,1 @@
+from fastapi_listing.paginator.naive_page_builder import NaivePaginationStrategy
