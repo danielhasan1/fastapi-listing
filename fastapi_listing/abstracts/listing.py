@@ -12,11 +12,10 @@ class ListingBase(ABC):
     def prepare_query(self, listing_meta_info: ListingMetaInfo) -> Query:
         pass
 
-    def apply_sorting(self, query: Query, sorting_strategy: TableDataSortingStrategy,
-                      sort_field_mapper: dict[str, str]) -> Query:
+    def apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         pass
 
-    def apply_filters(self, query: Query, filter_field_mapper: dict[str, str]) -> Query:
+    def apply_filters(self, query: Query, filter_field_mapper: dict[str, str], filter_plugins: list[str]) -> Query:
         pass
 
     def paginate(self, query: Query, paginate_strategy: TableDataPaginatingStrategy) -> ListingResponseType:
