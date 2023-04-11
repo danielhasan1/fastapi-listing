@@ -11,7 +11,7 @@ jobs:
           node-version: 16.x
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
           node-version: 16.x
@@ -23,7 +23,7 @@ jobs:
         run: |
           python -m build
       - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v3
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
