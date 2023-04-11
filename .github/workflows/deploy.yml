@@ -6,12 +6,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v1
+        with:
+          node-version: 16.x
 
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
+          node-version: 16.x
 
       - name: Install build dependencies
         run: |
@@ -24,3 +27,4 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
+          node-version: 16.x
