@@ -23,9 +23,6 @@ except ImportError:
     HAS_PYDANTIC = False
     BaseModel: Optional[Type] = None
 
-N_SRT_STRATEGY_DSC = "naive_sort_dsc"
-N_SRT_STRATEGY_ASC = "naive_sort_asc"
-
 
 class FastapiListing(ListingBase):
 
@@ -33,10 +30,10 @@ class FastapiListing(ListingBase):
                  custom_fields: bool = False) -> None:
         self.request = request
         self.dao = dao
-        if HAS_PYDANTIC:
+        if HAS_PYDANTIC and pydantic_serializer:
             self.fields_to_fetch = list(pydantic_serializer.__fields__.keys())
         else:
-            self.fields_to_fetch = None  # can't deduce automatically tell this in query strategy
+            self.fields_to_fetch = None
         self.custom_fields = custom_fields
 
     def replace_aliases(self, mapper: dict[str, str], req_params: list[dict[str, str]]) -> list[dict[str, str]]:
