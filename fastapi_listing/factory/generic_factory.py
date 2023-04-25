@@ -6,6 +6,7 @@ object_creation_collector: dict[str, Callable[..., Any]] = {}
 
 
 def register(key: str, creator: Callable[..., Any]) -> None:
+    print(creator)
     """Register a new game character type."""
     if key in object_creation_collector:
         raise ValueError(f"Factory can not have duplicate builder key {key} for instance {creator.__name__}")

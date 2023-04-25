@@ -16,7 +16,8 @@ def import_module(name: str) -> ModuleInterface:
 
 
 def load_plugins(plugins: list[str]) -> None:
-    """Loads the plugins defined in the plugins list."""
+    """Loads the mechanics defined in the mechanics list."""
+    print(plugins)
     for plugin_file in plugins:
         plugin = import_module(plugin_file)
         plugin.register()

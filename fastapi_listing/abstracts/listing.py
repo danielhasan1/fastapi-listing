@@ -2,9 +2,10 @@ from sqlalchemy.orm import Query
 from abc import ABC
 from typing import Type
 
-from fastapi_listing.abstracts import ListingMetaInfo, TableDataSortingStrategy, \
+from fastapi_listing.abstracts import TableDataSortingStrategy, \
     TableDataPaginatingStrategy
 from fastapi_listing.typing import ListingResponseType
+from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 
 
 class ListingBase(ABC):
@@ -15,7 +16,7 @@ class ListingBase(ABC):
     def apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         pass
 
-    def apply_filters(self, query: Query, filter_field_mapper: dict[str, str], filter_plugins: list[str]) -> Query:
+    def apply_filters(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         pass
 
     def paginate(self, query: Query, paginate_strategy: TableDataPaginatingStrategy) -> ListingResponseType:

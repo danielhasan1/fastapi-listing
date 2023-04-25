@@ -1,19 +1,19 @@
-from typing import Type, Optional
 from fastapi import Request
 from sqlalchemy.orm import Query
 from json import JSONDecodeError
+from typing import Type, Optional
 
 from fastapi_listing import utils
-from fastapi_listing.abstracts import TableDataPaginatingStrategy, TableDataSortingStrategy
+from fastapi_listing.abstracts import TableDataPaginatingStrategy
 from fastapi_listing.sorter import SortingOrderStrategy
-from fastapi_listing.typing import ListingResponseType
-from fastapi_listing.abstracts import ListingBase, ListingMetaInfo
-from fastapi_listing.factory import strategy_factory, filter_factory
+from fastapi_listing.typing import ListingResponseType, SqlAlchemyModel
+from fastapi_listing.abstracts import ListingBase
+from fastapi_listing.factory import strategy_factory
 from fastapi_listing.errors import ListingFilterError, ListingSorterError
-from fastapi_listing.filters import CommonFilterImpl
-from fastapi_listing.generic_dao import GenericDao
-from fastapi_listing.plugins import loader
+from fastapi_listing.dao.generic_dao import GenericDao
+from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.factory import generic_factory
+from fastapi_listing.mechanics import loader
 
 try:
     from pydantic import BaseModel
@@ -55,7 +55,6 @@ class FastapiListing(ListingBase):
             sorting_params = self.replace_aliases(listing_meta_info.sorting_column_mapper, sorting_params)
         else:
             sorting_params = [listing_meta_info.default_sort_val]
-        loader.load_plugins(listing_meta_info.sorter_plugins)
 
         # ideally sorting should only happen on one field multi field sorting puts
         # unwanted strain on table when the size is big and not really popular
@@ -80,10 +79,10 @@ class FastapiListing(ListingBase):
         def launch_mechanics(qry):
             # for mechanics in listing_meta_info.sorter_plugins:
             #     mecha: str = mechanics.split(".")[-1]
-            mecha: str = listing_meta_info.sorter_plugins[-1].split(".")[-1]
-            mecha_obj = generic_factory.create(mecha, query=qry, strategy=listing_meta_info.sorting_strategy,
-                                               sorting_params=sorting_params)
-            qry = mecha_obj.apply()
+            mecha: str = listing_meta_info.sorter_plugin
+            mecha_obj = generic_factory.create(mecha)
+            qry = mecha_obj.apply(query=qry, strategy=listing_meta_info.sorting_strategy,
+                                  sorting_params=sorting_params, extra_context=listing_meta_info.extra_context)
             return qry
 
         query = launch_mechanics(query)
@@ -96,35 +95,24 @@ class FastapiListing(ListingBase):
     # we can leave multi sorting for later release for now only allow sort on a singular field.
     # this class name is not looking to good think of a different name if possible.
     # FilterApplicationEngine
-    def apply_filters(self, query: Query, filter_field_mapper: dict[str, str], filter_plugins: list[str]) -> Query:
+    def apply_filters(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         try:
             fltrs: list[dict] = utils.jsonify_query_params(self.request.query_params.get("filter"))
         except JSONDecodeError:
             raise ListingFilterError(f"filter param is not a valid json!")
 
-        if temp := set(item.get("field") for item in fltrs) - set(filter_field_mapper.keys()):
+        if temp := set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys()):
             raise ListingFilterError(f"Filter'(s) not registered with listing: {temp}, Did you forget to do it?")
 
-        fltrs = self.replace_aliases(filter_field_mapper, fltrs)
-
-        loader.load_plugins(filter_plugins)
+        fltrs = self.replace_aliases(listing_meta_info.filter_column_mapper, fltrs)
 
         def launch_mechanics(qry):
-            mecha: str = filter_plugins[-1].split(".")[-1]
-            mecha_obj = generic_factory.create(mecha, query=qry, filter_params=fltrs, dao=self.dao,
-                                               request=self.request)
-            qry = mecha_obj.apply()
+            mecha_obj = generic_factory.create(listing_meta_info.filter_plugin)
+            qry = mecha_obj.apply(query=qry, filter_params=fltrs, dao=self.dao,
+                                  request=self.request, extra_context=listing_meta_info.extra_context)
             return qry
 
         query = launch_mechanics(query)
-
-        # for applied_filter in fltrs:
-        #     filter_obj: CommonFilterImpl = filter_factory.create(filter_field_mapper[applied_filter.get("field")],
-        #                                                          dao=self.dao,
-        #                                                          request=self.request)
-        #     query = filter_obj.filter(field=filter_field_mapper[applied_filter.get("field")],
-        #                               value=applied_filter.get("value"),
-        #                               query=query)
         return query
 
     def paginate(self, query: Query, paginate_strategy: TableDataPaginatingStrategy) -> ListingResponseType:
@@ -132,23 +120,22 @@ class FastapiListing(ListingBase):
         return query
 
     def prepare_query(self, listing_meta_info: ListingMetaInfo) -> Query:
-        base_query: Query = listing_meta_info.query_strategy.get_query(field_list=self.fields_to_fetch,
-                                                                       request=self.request,
+        base_query: Query = listing_meta_info.query_strategy.get_query(request=self.request,
                                                                        dao=self.dao,
-                                                                       custom_fields=self.custom_fields)
-        fltr_query: Query = self.apply_filters(base_query, listing_meta_info.filter_column_mapper)
+                                                                       extra_context=listing_meta_info.extra_context)
+        fltr_query: Query = self.apply_filters(base_query, listing_meta_info)
         srtd_query: Query = self.apply_sorting(fltr_query, listing_meta_info)
         return srtd_query
 
-    # def prepare_response(self, query, paginating_strategy) -> ListingResponseType:
-    #     """
-    #     Prepares a page response to return to the client
-    #     :param query sqlalchemy query
-    #     """
-    #     pgntd_resp: ListingResponseType = self.paginate(query, paginating_strategy)
-    #     return pgntd_resp
+    @staticmethod
+    def set_vals_in_extra_context(extra_context: dict, **kwargs):
+        extra_context.update(kwargs)
 
     def get_response(self, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
+        self.set_vals_in_extra_context(listing_meta_info.extra_context,
+                                       field_list=self.fields_to_fetch,
+                                       custom_fields=self.custom_fields
+                                       )
         fnl_query: Query = self.prepare_query(listing_meta_info)
         response: ListingResponseType = self.paginate(fnl_query, listing_meta_info.paginating_strategy)
         return response
@@ -164,29 +151,23 @@ class ListingService:
     PAGINATE_STRATEGY = "naive_paginator"
     QUERY_STRATEGY = "naive_query"
     SORTING_STRATEGY = "naive_sorter"
-    SORTER_PLUGIN = ["fastapi_listing.plugins.sorter_mechanics"]
-    FILTER_PLUGIN = ["fastapi_listing.plugins.filter_mechanics"]
+    MECHA_PLUGINS = ["fastapi_listing.mechanics.sorter_mechanics", "fastapi_listing.mechanics.filter_mechanics"]
+    SORT_MECHA = "sorter_mechanics"
+    FILTER_MECHA = "filter_mechanics"
+    model_kls: SqlAlchemyModel = None
+    dao_kls = GenericDao
 
-    def __init__(self, dao, request, model, **kwargs):
-        self.dao = dao(model, **kwargs)
+    def __init__(self, request, **kwargs) -> None:
+        self.dao = self.dao_kls(self.model_kls, **kwargs)
+        # pop out db sessions as they are concrete property of data access layer and not service layer.
+        # once injected to dao popping out here
+        kwargs.pop("read_db", None)
+        kwargs.pop("write_db", None)
         self.request = request
+        self.extra_context = kwargs
 
     def get_listing(self):
         raise NotImplementedError
-
-    # def choose_sorting_strategy(self):
-    #     try:
-    #         sorting_param: list[dict] = utils.jsonify_query_params(self.request.query_params.get("sort"))
-    #     except JSONDecodeError:
-    #         # CashifyLogger.error(f"Error occurred during sort decode:{e}")
-    #         raise ListingSorterError("sorter param is not a valid json!")
-    #     srt_strtg: str = "dsc"
-    #     if sorting_param:
-    #         srt_strtg = sorting_param[-1].get("type")
-    #     if srt_strtg == "asc":
-    #         return strategy_factory.create(self.SRT_STRATEGY_ASC, self.DEFAULT_SRT_ON)
-    #     else:
-    #         return strategy_factory.create(self.SRT_STRATEGY_DSC, self.DEFAULT_SRT_ON)
 
     class MetaInfo:
         def __init__(self, outer_instance) -> None:
@@ -203,8 +184,9 @@ class ListingService:
                 model=outer_instance.dao.model,
                 request=outer_instance.request
             )
-            self.sorter_plugins = outer_instance.SORTER_PLUGIN
-            self.filter_plugins = outer_instance.FILTER_PLUGIN
+            self.sorter_plugin = outer_instance.SORT_MECHA
+            self.filter_plugin = outer_instance.FILTER_MECHA
+            self.extra_context = outer_instance.extra_context
 
     def create_inner(self) -> MetaInfo:
         return ListingService.MetaInfo(self)
@@ -217,4 +199,5 @@ class ListingService:
     def get_aliased_sort_mapper(cls) -> dict[str, str]:
         return {key: key for key, val in cls.sort_mapper.items()}
 
-# default strategy factory
+
+loader.load_plugins(ListingService.MECHA_PLUGINS)

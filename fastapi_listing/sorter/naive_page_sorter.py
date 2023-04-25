@@ -37,6 +37,5 @@ class SortingOrderStrategy(TableDataSortingStrategy):
             inst_field = None
         if inst_field is None:
             raise ValueError(f"Provided sort field is not an attribute of {model}")  # todo improve this by custom exception
-            # raise CashifyApiException(LogisticsException.INVALID_SORT_FIELD, LogisticsDiagnoCode.PLG1013)
         return inst_field
 
