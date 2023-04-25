@@ -218,3 +218,28 @@ class ListingService:
         return {key: key for key, val in cls.sort_mapper.items()}
 
 # default strategy factory
+
+
+
+
+class NaiveQueryStrategy(QueryStrategy):
+
+    def get_inst_attr_to_read(self, custom_fields: bool, field_list: list, dao):
+        inst_fields = []
+        if custom_fields:
+            CashifyLogger.info("BYPASS CUSTOM PYDANTIC FIELDS ALLOWED.")
+            for field in field_list:
+                try:
+                    inst_fields.append(getattr(field, dao.model))
+                except AttributeError:
+                    pass
+        else:
+            inst_fields = [getattr(dao.model, field) for field in field_list]
+        return inst_fields
+
+
+    def get_query(self, *, field_list: list=None, request: Request=None, dao: ClassicDaoFeatures =None,
+                  custom_fields: bool=None):
+        inst_fields = self.get_inst_attr_to_read(custom_fields, field_list, dao)
+        query = dao.get_naive_read(inst_fields)
+        return query
