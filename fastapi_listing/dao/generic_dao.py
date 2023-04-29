@@ -30,13 +30,17 @@ class GenericDao(DaoAbstract):
     at this layer.
     """
 
-    def __init__(self, model, **kwargs):
+    model_kls: SqlAlchemyModel = None
+
+    def __init__(self, **kwargs):
         # considering that we are dealing with separate read and write dbs.
         # we must have two sessions one for read replica and one for master or write replica
         # we should define our reusable attributes here that we will use in each dao method definition
         self._read_db: Session = kwargs.get("read_db")
         self._write_db: Session = kwargs.get("write_db")
-        self.model = model
+        if self.model_kls is None:
+            raise ValueError("model class is not set!")
+        self.model = self.model_kls
 
     def create(self, values: dict[str, str | int]) -> SqlAlchemyModel:
         """

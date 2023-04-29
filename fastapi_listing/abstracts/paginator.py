@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
 
 class TableDataPaginatingStrategy(ABC):
@@ -9,5 +10,5 @@ class TableDataPaginatingStrategy(ABC):
         pass
 
     @abstractmethod
-    def paginate(self, query, request):
+    def paginate(self, query: SqlAlchemyQuery, request: FastapiRequest, extra_context: dict):
         pass

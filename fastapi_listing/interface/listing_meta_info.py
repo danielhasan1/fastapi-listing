@@ -7,35 +7,35 @@ from fastapi_listing.sorter import SortingOrderStrategy
 class ListingMetaInfo(Protocol):
 
     @property
-    def paginating_strategy(self) -> TableDataPaginatingStrategy:  # type:ignore # noqa
+    def paginating_strategy() -> TableDataPaginatingStrategy:  # type:ignore # noqa
         ...
 
     @property
-    def query_strategy(self) -> QueryStrategy:  # type:ignore # noqa
+    def query_strategy() -> QueryStrategy:  # type:ignore # noqa
         ...
 
     @property
-    def sorting_column_mapper(self) -> dict:  # type:ignore # noqa
+    def sorting_column_mapper() -> dict:  # type:ignore # noqa
         ...
 
     @property
-    def filter_column_mapper(self) -> dict:  # type:ignore # noqa
+    def filter_column_mapper() -> dict:  # type:ignore # noqa
         ...
 
     @property
-    def sorting_strategy(self) -> TableDataSortingStrategy:  # type:ignore # noqa
+    def sorting_strategy() -> TableDataSortingStrategy:  # type:ignore # noqa
         ...
 
     @property
-    def default_sort_val(self) -> dict[str, str]:  # type:ignore # noqa
+    def default_sort_val() -> dict[str, str]:  # type:ignore # noqa
         ...
 
     @property
-    def sorter_plugin(self) -> str:  # type:ignore # noqa
+    def sorter_plugin() -> str:  # type:ignore # noqa
         ...
 
     @property
-    def filter_plugin(self) -> str:  # type:ignore # noqa
+    def filter_plugin() -> str:  # type:ignore # noqa
         ...
 
     # @property
@@ -43,7 +43,7 @@ class ListingMetaInfo(Protocol):
     #     ...
 
     @property
-    def extra_context(self) -> dict: #type: ignore # noqa
+    def extra_context() -> dict: #type: ignore # noqa
         ...
 
 

@@ -8,3 +8,7 @@ class ListingFilterError(FastapiListingError):
 
 class ListingSorterError(FastapiListingError):
     pass
+
+
+class ListingPaginatorError(FastapiListingError):
+    pass

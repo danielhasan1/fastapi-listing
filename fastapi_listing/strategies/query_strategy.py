@@ -9,6 +9,8 @@ class NaiveQueryStrategy(QueryStrategy):
         inst_fields = []
         if custom_fields:
             # ("BYPASS CUSTOM PYDANTIC FIELDS ALLOWED.")
+            # when serializer contains fields that get filled via validators or at runtime
+            # or fields that get generated from model fields.
             for field in field_list:
                 try:
                     inst_fields.append(getattr(field, dao.model))

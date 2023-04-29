@@ -3,7 +3,7 @@ from fastapi_listing.strategies import NaiveQueryStrategy, NaivePaginationStrate
 from fastapi_listing.service.listing_main import ListingService, FastapiListing
 
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 strategy_factory.register_strategy("naive_paginator", NaivePaginationStrategy)
 strategy_factory.register_strategy("naive_sorter", SortingOrderStrategy)
