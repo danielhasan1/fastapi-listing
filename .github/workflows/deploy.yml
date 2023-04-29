@@ -1,4 +1,7 @@
-on: push
+on:
+  release:
+    types:
+      - published
 jobs:
   deploy:
     name: Build and deploy package
