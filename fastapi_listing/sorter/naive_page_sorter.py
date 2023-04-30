@@ -18,7 +18,8 @@ class SortingOrderStrategy(TableDataSortingStrategy):
         query = query.order_by(inst_field.desc())
         return query
 
-    def sort(self, *, query: SqlAlchemyQuery = None, value: dict[str, str] = None) -> SqlAlchemyQuery:
+    def sort(self, *, query: SqlAlchemyQuery = None, value: dict[str, str] = None,
+             extra_context: dict = None) -> SqlAlchemyQuery:
         assert value["type"] in ["asc", "dsc"]
         if value is None:
             raise ValueError("sort expects value with structure [type, field], none provided")
@@ -36,6 +37,6 @@ class SortingOrderStrategy(TableDataSortingStrategy):
         except AttributeError:
             inst_field = None
         if inst_field is None:
-            raise ValueError(f"Provided sort field is not an attribute of {model}")  # todo improve this by custom exception
+            raise ValueError(
+                f"Provided sort field is not an attribute of {model}")  # todo improve this by custom exception
         return inst_field
-

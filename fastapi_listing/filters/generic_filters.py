@@ -5,9 +5,10 @@ from fastapi_listing.abstracts import FilterAbstract
 
 class CommonFilterImpl(FilterAbstract):
 
-    def __init__(self, dao=None, request=None, **kwargs):
+    def __init__(self, dao=None, request=None, extra_context=None):
         self.dao = dao
         self.request = request
+        self.extra_context = extra_context
 
     def filter(self, *, field: str = None, value: dict = None, query=None):
         raise NotImplementedError("To be implemented in child class!")

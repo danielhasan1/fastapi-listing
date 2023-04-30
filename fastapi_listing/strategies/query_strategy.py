@@ -7,6 +7,7 @@ class NaiveQueryStrategy(QueryStrategy):
 
     def get_inst_attr_to_read(self, custom_fields: bool, field_list: list, dao: GenericDao):
         inst_fields = []
+
         if custom_fields:
             # ("BYPASS CUSTOM PYDANTIC FIELDS ALLOWED.")
             # when serializer contains fields that get filled via validators or at runtime

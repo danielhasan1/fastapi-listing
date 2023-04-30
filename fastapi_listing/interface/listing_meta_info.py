@@ -31,11 +31,11 @@ class ListingMetaInfo(Protocol):
         ...
 
     @property
-    def sorter_plugin() -> str:  # type:ignore # noqa
+    def sorter_mechanic() -> str:  # type:ignore # noqa
         ...
 
     @property
-    def filter_plugin() -> str:  # type:ignore # noqa
+    def filter_mechanic() -> str:  # type:ignore # noqa
         ...
 
     # @property

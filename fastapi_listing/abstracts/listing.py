@@ -24,7 +24,7 @@ class ListingBase(ABC):
 
     @abstractmethod
     def _paginate(self, query: Query, paginate_strategy: TableDataPaginatingStrategy,
-                 extra_context: dict) -> ListingResponseType:
+                  extra_context: dict) -> ListingResponseType:
         pass
 
     @abstractmethod
@@ -87,4 +87,3 @@ class ListingServiceBase(ABC):
     @abstractmethod
     def get_listing(self):
         ...
-

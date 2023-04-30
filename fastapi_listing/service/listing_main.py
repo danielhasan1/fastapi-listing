@@ -5,15 +5,13 @@ from typing import Type, Optional
 
 from fastapi_listing import utils
 from fastapi_listing.abstracts import TableDataPaginatingStrategy
-from fastapi_listing.sorter import SortingOrderStrategy
-from fastapi_listing.typing import ListingResponseType, SqlAlchemyModel
+from fastapi_listing.typing import ListingResponseType
 from fastapi_listing.abstracts import ListingBase, ListingServiceBase
 from fastapi_listing.factory import strategy_factory
 from fastapi_listing.errors import ListingFilterError, ListingSorterError
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
-from fastapi_listing.factory import generic_factory
-from fastapi_listing.mechanics import loader
+from fastapi_listing.factory import _generic_factory
 
 try:
     from pydantic import BaseModel
@@ -33,7 +31,7 @@ class FastapiListing(ListingBase):
         if HAS_PYDANTIC and pydantic_serializer:
             self.fields_to_fetch = list(pydantic_serializer.__fields__.keys())
         else:
-            self.fields_to_fetch = None
+            self.fields_to_fetch = []
         self.custom_fields = custom_fields
 
     def _replace_aliases(self, mapper: dict[str, str], req_params: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -77,10 +75,10 @@ class FastapiListing(ListingBase):
         # query = sorting_strategy.sort(value=sorting_params[-1],
         #                               query=query)
         def launch_mechanics(qry):
-            # for mechanics in listing_meta_info.sorter_plugins:
+            # for mechanics in listing_meta_info.sorter_mechanics:
             #     mecha: str = mechanics.split(".")[-1]
-            mecha: str = listing_meta_info.sorter_plugin
-            mecha_obj = generic_factory.create(mecha)
+            mecha: str = listing_meta_info.sorter_mechanic
+            mecha_obj = strategy_factory.create(mecha)
             qry = mecha_obj.apply(query=qry, strategy=listing_meta_info.sorting_strategy,
                                   sorting_params=sorting_params, extra_context=listing_meta_info.extra_context)
             return qry
@@ -107,7 +105,7 @@ class FastapiListing(ListingBase):
         fltrs = self._replace_aliases(listing_meta_info.filter_column_mapper, fltrs)
 
         def launch_mechanics(qry):
-            mecha_obj = generic_factory.create(listing_meta_info.filter_plugin)
+            mecha_obj = strategy_factory.create(listing_meta_info.filter_mechanic)
             qry = mecha_obj.apply(query=qry, filter_params=fltrs, dao=self.dao,
                                   request=self.request, extra_context=listing_meta_info.extra_context)
             return qry
@@ -153,8 +151,8 @@ class ListingService(ListingServiceBase):
     PAGINATE_STRATEGY: str = "naive_paginator"
     QUERY_STRATEGY: str = "naive_query"
     SORTING_STRATEGY: str = "naive_sorter"
-    SORT_MECHA: str = "sorter_mechanics"
-    FILTER_MECHA: str = "filter_mechanics"
+    SORT_MECHA: str = "singleton_sorter_mechanics"
+    FILTER_MECHA: str = "iterative_filter_mechanics"
     dao_kls: GenericDao = GenericDao
 
     # pydantic_serializer: Type[BaseModel] = None
@@ -197,30 +195,30 @@ class ListingService(ListingServiceBase):
         """
         raise NotImplementedError("method should be implemented in child class and not here!")
 
-    def page_data_modifier(self, data: dict) -> dict:
-        raise NotImplementedError
+    # def page_data_modifier(self, data: dict) -> dict:
+    #     raise NotImplementedError
 
     class MetaInfo:
 
         def __init__(self, outer_instance):
-            self.paginating_strategy: TableDataPaginatingStrategy = strategy_factory.create(
+            self.paginating_strategy = strategy_factory.create(
                 outer_instance.PAGINATE_STRATEGY)
-            self.filter_column_mapper: dict = outer_instance.filter_mapper
-            self.query_strategy: Query = strategy_factory.create(outer_instance.QUERY_STRATEGY)
-            # self.sorting_column_mapper: dict = outer_instance.sort_mapper
-            self.default_sort_val: dict[str, str] = dict(type=outer_instance.DEFAULT_SRT_ORD,
-                                                         field=outer_instance.DEFAULT_SRT_ON)
-            self.sorting_strategy: SortingOrderStrategy = strategy_factory.create(
+            self.filter_column_mapper = outer_instance.filter_mapper
+            self.query_strategy = strategy_factory.create(outer_instance.QUERY_STRATEGY)
+            self.sorting_column_mapper = outer_instance.sort_mapper
+            self.default_sort_val = dict(type=outer_instance.DEFAULT_SRT_ORD,
+                                         field=outer_instance.DEFAULT_SRT_ON)
+            self.sorting_strategy = strategy_factory.create(
                 outer_instance.SORTING_STRATEGY,
                 model=outer_instance.dao.model,
                 request=outer_instance.request
             )
-            self.sorter_plugin: str = outer_instance.SORT_MECHA
-            self.filter_plugin: str = outer_instance.FILTER_MECHA
-            self.extra_context: dict = outer_instance.extra_context
+            self.sorter_mechanic = outer_instance.SORT_MECHA
+            self.filter_mechanic = outer_instance.FILTER_MECHA
+            self.extra_context = outer_instance.extra_context
 
     def meta_info_generator(self) -> ListingMetaInfo:
-        return ListingService.MetaInfo(self) # type:ignore # noqa # some issue is coming in pycharm for return types
+        return ListingService.MetaInfo(self)  # type:ignore # noqa # some issue is coming in pycharm for return types
 
     @classmethod
     def get_aliased_filter_mapper(cls) -> dict[str, str]:
@@ -230,45 +228,56 @@ class ListingService(ListingServiceBase):
     def get_aliased_sort_mapper(cls) -> dict[str, str]:
         return {key: key for key, val in cls.sort_mapper.items()}
 
-    @staticmethod
-    def get_sort_mecha_plugin_path() -> str:
-        """
-        hook to provide sort mecha plugin module path as py import path
-        overwrite allowed to provide custom path.
-        :return: import path as string ex. fastapi_listing.mechanics.sorter_mechanics.
-        """
-        return "fastapi_listing.mechanics.sorter_mechanics"
-
-    @staticmethod
-    def get_filter_mecha_plugin_path() -> str:
-        """
-       hook to provide filter mecha plugin module path as py import path
-       overwrite allowed to provide custom path.
-       :return: import path as string ex. fastapi_listing.mechanics.filter_mechanics.
-       """
-        return "fastapi_listing.mechanics.filter_mechanics"
-
-    @classmethod
-    def plugins_to_load(cls) -> list[str]:
-        """
-        Provided a hook to be called at module level of each listing service.
-        overwrite sort or filter plugin path getters to give your own custom
-        mechanic implementations.
-        refrain from overwriting it as this may change or it's fundamnetal
-        implementation is already broken down to pieces that can no longer
-        be broken any further. So instead of overwriting this
-        overwrite the individual pieces
-        :return: list plugins to load
-        currently only support sort/filter mecha loading
-        todo: can add pattern calling like %s_plugin_path for providing n number of plugin loading
-        """
-        return [cls.get_sort_mecha_plugin_path(), cls.get_filter_mecha_plugin_path()]
+    # @staticmethod
+    # def get_sort_mecha_plugin_path() -> str:
+    #     """
+    #     hook to provide sort mecha plugin module path as py import path
+    #     overwrite allowed to provide custom path.
+    #     :return: import path as string ex. fastapi_listing.mechanics.sorter_mechanics.
+    #     """
+    #     return "fastapi_listing.mechanics.sorter_mechanics"
+    #
+    # @staticmethod
+    # def get_filter_mecha_plugin_path() -> str:
+    #     """
+    #    hook to provide filter mecha plugin module path as py import path
+    #    overwrite allowed to provide custom path.
+    #    :return: import path as string ex. fastapi_listing.mechanics.filter_mechanics.
+    #    """
+    #     return "fastapi_listing.mechanics.filter_mechanics"
+    #
+    # @classmethod
+    # def plugins_to_load(cls) -> list[str]:
+    #     """
+    #     Provided a hook to be called at module level of each listing service.
+    #     overwrite sort or filter plugin path getters to give your own custom
+    #     mechanic implementations.
+    #     refrain from overwriting it as this may change or it's fundamnetal
+    #     implementation is already broken down to pieces that can no longer
+    #     be broken any further. So instead of overwriting this
+    #     overwrite the individual pieces
+    #     :return: list plugins to load
+    #     currently only support sort/filter mecha loading
+    #     todo: can add pattern calling like %s_plugin_path for providing n number of plugin loading
+    #     """
+    #     return [cls.get_sort_mecha_plugin_path(), cls.get_filter_mecha_plugin_path()]
 
 
 # calling loader at module level so once the module is loaded all plugins get loaded and not further loading is required
-loader.load_plugins(ListingService.plugins_to_load())
+# loader.load_plugins(ListingService.plugins_to_load())
+
 
 
 # todo: how to provide a hook in listing service so a person can easily overwrite the data list or manipulate it easily
 # todo: before wrapping it up in page response
 
+
+# page modifier has become abstract method in child class
+#
+# metainfo is causing issue due to its attributes types
+#
+# plugin is causing issue becuase when we load plugin in our child class first the module loads default plugin then our child class loads plugin
+# if one plugin is already loaded from our core module then child module tries to load it again and it shows error
+
+
+#appr 1 - we could centralise the loading process but it would benefit if we could understand plugin pattern in more depth
