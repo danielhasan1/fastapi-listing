@@ -3,7 +3,7 @@ from fastapi_listing.filters.generic_filters import (
     EqualityFilter,
     InEqualityFilter,
     InDataFilter,
-    BetweenDateFilter,
+    BetweenUnixMilliSecDateFilter,
     StringStartsWithFilter,
     StringEndsWithFilter,
     StringContainsFilter,

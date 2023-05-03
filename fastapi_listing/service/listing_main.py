@@ -144,12 +144,12 @@ class FastapiListing(ListingBase):
         return response
 
 
-class ListingService(ListingServiceBase):
+class ListingService(ListingServiceBase): # noqa
     filter_mapper: dict = {}
     sort_mapper: dict = {}
     # here resource creation should be based on factory and not inline as we are separating creation from usage.
     # factory should deliver sorting resource
-    DEFAULT_SRT_ON: str = "created_at"
+    # DEFAULT_SRT_ON: str = "created_at" # to be taken by user at child class level
     DEFAULT_SRT_ORD: str = "dsc"
     PAGINATE_STRATEGY: str = "naive_paginator"
     QUERY_STRATEGY: str = "naive_query"
@@ -168,7 +168,6 @@ class ListingService(ListingServiceBase):
     def __init__(self, request: Request, read_db=None, write_db=None, **kwargs) -> None:
         # self.dao = self.dao_kls(**kwargs)
         # pop out db sessions as they are concrete property of data access layer and not service layer.
-        # once injected to dao popping out here
         self.request = request
         self.extra_context = kwargs
         # ideally dao shouldn't have anything to do with extra_context i.e., kwargs
@@ -234,14 +233,6 @@ class ListingService(ListingServiceBase):
 
     def meta_info_generator(self) -> ListingMetaInfo:
         return ListingService.MetaInfo(self)  # type:ignore # noqa # some issue is coming in pycharm for return types
-
-    @classmethod
-    def get_aliased_filter_mapper(cls) -> dict[str, str]:
-        return {key: key for key, val in cls.filter_mapper.items()}
-
-    @classmethod
-    def get_aliased_sort_mapper(cls) -> dict[str, str]:
-        return {key: key for key, val in cls.sort_mapper.items()}
 
     # @staticmethod
     # def get_sort_mecha_plugin_path() -> str:

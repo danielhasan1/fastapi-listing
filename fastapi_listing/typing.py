@@ -9,11 +9,12 @@ try:
     from sqlalchemy.orm import Query
     from sqlalchemy.orm import Session
     from sqlalchemy.sql.sqltypes import TypeEngine
+    from sqlalchemy.sql.schema import Column
 except ImportError:
     DeclarativeMeta = None
     Query = None
     Session = None
-    TypeEngine = None
+    Column = None
 
 
 class ListingResponseType(TypedDict):
@@ -27,6 +28,6 @@ class ListingResponseType(TypedDict):
 SqlAlchemyQuery = TypeVar("SqlAlchemyQuery", bound=Query)
 SqlAlchemySession = TypeVar("SqlAlchemySession", bound=Session)
 FastapiRequest = TypeVar("FastapiRequest", bound=Request)
-AnySqlAlchemyColumn = TypeVar("AnySqlAlchemyColumn", bound=TypeEngine)
+AnySqlAlchemyColumn = TypeVar("AnySqlAlchemyColumn", bound=Column)
 SqlAlchemyModel = TypeVar("SqlAlchemyModel", bound=DeclarativeMeta)
 
