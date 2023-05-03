@@ -5,6 +5,11 @@ from fastapi_listing.typing import SqlAlchemyModel
 
 class DaoAbstract(metaclass=ABCMeta):
 
+    @property
+    @abstractmethod
+    def model(self):
+        pass
+
     @abstractmethod
     def create(self, values: dict[str, str | int]) -> SqlAlchemyModel:
         pass

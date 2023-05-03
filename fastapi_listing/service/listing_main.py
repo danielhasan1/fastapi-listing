@@ -11,7 +11,8 @@ from fastapi_listing.factory import strategy_factory
 from fastapi_listing.errors import ListingFilterError, ListingSorterError
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
-from fastapi_listing.factory import _generic_factory
+from fastapi_listing import constants
+import os
 
 try:
     from pydantic import BaseModel
@@ -122,7 +123,9 @@ class FastapiListing(ListingBase):
         base_query: Query = listing_meta_info.query_strategy.get_query(request=self.request,
                                                                        dao=self.dao,
                                                                        extra_context=listing_meta_info.extra_context)
-        fltr_query: Query = self._apply_filters(base_query, listing_meta_info)
+        if base_query is None or not base_query:
+            raise ValueError("query strategy returned nothing Query object is expected!")
+        fltr_query: Query = self._apply_filters(base_query, listing_meta_info) # expects a query but none returned when custom strategy return none etc
         srtd_query: Query = self._apply_sorting(fltr_query, listing_meta_info)
         return srtd_query
 
@@ -162,14 +165,26 @@ class ListingService(ListingServiceBase):
     # flexibility for the user to be able to switch between schema Fastapilisting object
     # should get initialized at user level and not implicit.
 
-    def __init__(self, request, **kwargs) -> None:
-        self.dao = self.dao_kls(**kwargs)
+    def __init__(self, request: Request, read_db=None, write_db=None, **kwargs) -> None:
+        # self.dao = self.dao_kls(**kwargs)
         # pop out db sessions as they are concrete property of data access layer and not service layer.
         # once injected to dao popping out here
-        kwargs.pop("read_db", None)
-        kwargs.pop("write_db", None)
         self.request = request
         self.extra_context = kwargs
+        # ideally dao shouldn't have anything to do with extra_context i.e., kwargs
+        # but in case someone could find any use of it we pushed prepare_dap below
+        # so user could hack prepare_dao hook to do unwanted things.
+        self._prepare_dao(read_db, write_db)
+
+    def _prepare_dao(self, read_db, write_db):
+
+        self.dao = self.dao_kls(read_db=read_db, write_db=write_db)
+        # once dao is prepared and linked with listing service
+        # we don't need it's dependent params anymore.
+        # to only allowing db access on a single layer i.e. dao (data access object layer)
+        # in case user has only one db for read/write
+        # they can send read_db = write_db = db
+        # both variable will still refer to same session
 
     def get_listing(self):
         """

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi_listing.typing import SqlAlchemyModel
 
 
-class GenericDao(DaoAbstract):
+class GenericDao(DaoAbstract):  # type:ignore # noqa
     """
     Dao stands for data access object.
     This layers encapsulates all logic that a user may write
@@ -30,17 +30,32 @@ class GenericDao(DaoAbstract):
     at this layer.
     """
 
-    model_kls: SqlAlchemyModel = None
+    # model: SqlAlchemyModel = None to be defined at model dao level
 
-    def __init__(self, **kwargs):
+    def __init__(self, read_db=None, write_db=None):
         # considering that we are dealing with separate read and write dbs.
         # we must have two sessions one for read replica and one for master or write replica
         # we should define our reusable attributes here that we will use in each dao method definition
-        self._read_db: Session = kwargs.get("read_db")
-        self._write_db: Session = kwargs.get("write_db")
-        if self.model_kls is None:
-            raise ValueError("model class is not set!")
-        self.model = self.model_kls
+        # even if we are using single db still having two references for the same session won't hurt
+        # for future expansion once we decide to move on to read/write replica architecure
+        # we already have groundwork done and only need to push different connections
+        # from request lifecycle layer.
+        self._read_db: Session = read_db #kwargs.get("read_db")
+        self._write_db: Session = write_db #kwargs.get("write_db")
+        # if self.model is None:
+        #     raise ValueError("model class is not set!")
+
+    # def __setattr__(cls, name, value):
+    #     if name == "model":
+    #         raise AttributeError("Cannot modify .model")
+    #     else:
+    #         return type.__setattr__(cls, name, value)
+    #
+    # def __delattr__(cls, name):
+    #     if name == "model":
+    #         raise AttributeError("Cannot delete .model")
+    #     else:
+    #         return type.__delattr__(cls, name)
 
     def create(self, values: dict[str, str | int]) -> SqlAlchemyModel:
         """
@@ -50,7 +65,7 @@ class GenericDao(DaoAbstract):
         :param values: dict of values where keys are columns of table and value should be row values
         :return: created object i.e., instrumented row object.
         """
-        pass
+        raise NotImplementedError
 
     def update(self, identifier: dict[str, str | int | list], values: dict) -> bool:
         """
@@ -59,13 +74,13 @@ class GenericDao(DaoAbstract):
         :param values:
         :return:
         """
-        pass
+        raise NotImplementedError
 
     def read(self, identifier: dict[str, str | int | list], fields: list | str = "__all__") -> SqlAlchemyModel:
-        pass
+        raise NotImplementedError
 
     def delete(self, ids: list[int]) -> bool:
-        pass
+        raise NotImplementedError
 
     def get_naive_read(self, fields_to_read: list):
         return self._read_db.query(*fields_to_read)
