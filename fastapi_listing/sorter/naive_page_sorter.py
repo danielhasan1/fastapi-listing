@@ -20,9 +20,9 @@ class SortingOrderStrategy(TableDataSortingStrategy):
 
     def sort(self, *, query: SqlAlchemyQuery = None, value: dict[str, str] = None,
              extra_context: dict = None) -> SqlAlchemyQuery:
-        assert value["type"] in ["asc", "dsc"]
         if value is None:
             raise ValueError("sort expects value with structure [type, field], none provided")
+        assert value["type"] in ["asc", "dsc"]
         inst_field: AnySqlAlchemyColumn = self.validate_srt_field(self.model, value["field"])
         if value["type"] == "asc":
             query = self.sort_asc_util(query, inst_field)
