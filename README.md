@@ -89,7 +89,16 @@ class Product(Base):
 ```
 ```python
 #dao file
-class ProductDao(ClassicDaoFeatures): # ClassicDaoFeatures is a baseclass containing generic helper methods
+
+from fastapi_listing.dao import GenericDao
+"""
+ClassicDaoFeatures is a baseclass containing generic helper methods
+ClassicDaoFeatures inherits from GenericDao which comes with fastapi_listing
+Check out GenericDao to see how it looks and how you can leverage it
+You can check out this gist https://gist.github.com/danielhasan1/39ed1c8c3f253231b9c57c401db09041
+for classicDaoFeatures definition
+"""
+class ProductDao(ClassicDaoFeatures):
     model = Product # required property, linking our model.
 ```
 ```python
