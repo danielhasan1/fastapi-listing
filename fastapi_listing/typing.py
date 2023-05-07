@@ -1,4 +1,4 @@
-from typing import TypeVar, List, Dict
+from typing import TypeVar, List, Dict, Union
 from typing_extensions import TypedDict
 from fastapi import Request
 
@@ -18,7 +18,7 @@ except ImportError:
 
 
 class ListingResponseType(TypedDict):
-    data: List[Dict[str, int | str | list | dict]]
+    data: List[Dict[str, Union[int, str, list, dict]]]
     currentPageNumber: int
     currentPageSize: int
     totalCount: int

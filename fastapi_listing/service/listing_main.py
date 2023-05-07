@@ -1,7 +1,7 @@
 from fastapi import Request
 from sqlalchemy.orm import Query
 from json import JSONDecodeError
-from typing import Type, Optional
+from typing import Type, Optional, Dict, List
 
 from fastapi_listing import utils
 from fastapi_listing.abstracts import TableDataPaginatingStrategy
@@ -37,7 +37,7 @@ class FastapiListing(ListingBase):
             self.fields_to_fetch = []
         self.custom_fields = custom_fields
 
-    def _replace_aliases(self, mapper: dict[str, str], req_params: list[dict[str, str]]) -> list[dict[str, str]]:
+    def _replace_aliases(self, mapper: Dict[str, str], req_params: List[Dict[str, str]]) -> List[Dict[str, str]]:
         req_prms_cpy = req_params.copy()
         for param in req_prms_cpy:
             param["field"] = mapper[param["field"]]
@@ -48,9 +48,9 @@ class FastapiListing(ListingBase):
             sorting_params: list[dict] = utils.jsonify_query_params(self.request.query_params.get("sort"))
         except JSONDecodeError:
             raise FastapiListingRequestSemanticApiException(status_code=422, detail="sorter param is not a valid json!")
-
-        if temp := set(item.get("field") for item in sorting_params) - set(
-                listing_meta_info.sorting_column_mapper.keys()):
+        temp = set(item.get("field") for item in sorting_params) - set(
+            listing_meta_info.sorting_column_mapper.keys())
+        if temp:
             raise NotRegisteredApiException(
                 status_code=409, detail=f"Sorter'(s) not registered with listing: {temp}, Did you forget to do it?")
         if sorting_params:
@@ -102,8 +102,8 @@ class FastapiListing(ListingBase):
             fltrs: list[dict] = utils.jsonify_query_params(self.request.query_params.get("filter"))
         except JSONDecodeError:
             raise FastapiListingRequestSemanticApiException(status_code=422, detail=f"filter param is not a valid json!")
-
-        if temp := set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys()):
+        temp = set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys())
+        if temp:
             raise NotRegisteredApiException(
                 status_code=409, detail=f"Filter'(s) not registered with listing: {temp}, Did you forget to do it?")
 

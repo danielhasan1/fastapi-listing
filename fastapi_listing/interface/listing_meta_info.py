@@ -1,5 +1,8 @@
-from typing import Protocol, Type
-
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
+from typing import Dict
 from fastapi_listing.abstracts import TableDataSortingStrategy, TableDataPaginatingStrategy, QueryStrategy
 from fastapi_listing.sorter import SortingOrderStrategy
 
@@ -27,7 +30,7 @@ class ListingMetaInfo(Protocol):
         ...
 
     @property
-    def default_sort_val() -> dict[str, str]:  # type:ignore # noqa
+    def default_sort_val() -> Dict[str, str]:  # type:ignore # noqa
         ...
 
     @property

@@ -8,6 +8,7 @@ from fastapi_listing import utils
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.dialects.mysql import BIT
+from typing import List, Dict
 
 Base = declarative_base()
 
@@ -73,7 +74,7 @@ class ProductDetail(BaseModel):
 
 
 class ProductPage(BaseModel):
-    data: list[ProductDetail] = []
+    data: List[ProductDetail] = []
     currentPageSize: int
     currentPageNumber: int
     hasNext: bool
@@ -108,7 +109,7 @@ class FakeQueryStrategyV1(NaiveQueryStrategy):
 
 class FakeSortingStrategy(SortingOrderStrategy):
 
-    def sort(self, *, query=None, value: dict[str, str] = None,
+    def sort(self, *, query=None, value: Dict[str, str] = None,
              extra_context: dict = None):
         assert value["type"] in ["asc", "dsc"]
         assert query == fake_db_query1
@@ -177,7 +178,7 @@ class TestListinghServiceVariablePageFlow(ListingService):
 
 class FakeSortingStrategyV2(SortingOrderStrategy):
 
-    def sort(self, *, query=None, value: dict[str, str] = None,
+    def sort(self, *, query=None, value: Dict[str, str] = None,
              extra_context: dict = None):
         assert value["type"] in ["asc", "dsc"], "invalid sorting style!"
         assert query == fake_db_query1

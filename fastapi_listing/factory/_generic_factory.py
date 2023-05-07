@@ -1,8 +1,8 @@
 """Factory for creating a game character."""
 
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
-object_creation_collector: dict[str, Callable[..., Any]] = {}
+object_creation_collector: Dict[str, Callable[..., Any]] = {}
 
 
 def register(key: str, creator: Callable[..., Any]) -> None:

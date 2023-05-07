@@ -1,3 +1,4 @@
+from typing import Dict
 from fastapi_listing.abstracts import TableDataSortingStrategy
 from fastapi_listing.typing import SqlAlchemyModel, FastapiRequest, SqlAlchemyQuery, AnySqlAlchemyColumn
 
@@ -18,7 +19,7 @@ class SortingOrderStrategy(TableDataSortingStrategy):
         query = query.order_by(inst_field.desc())
         return query
 
-    def sort(self, *, query: SqlAlchemyQuery = None, value: dict[str, str] = None,
+    def sort(self, *, query: SqlAlchemyQuery = None, value: Dict[str, str] = None,
              extra_context: dict = None) -> SqlAlchemyQuery:
         if value is None:
             raise ValueError("sort expects value with structure [type, field], none provided")

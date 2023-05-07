@@ -1,4 +1,4 @@
-from fastapi_listing.factory import _generic_factory
+from typing import List, Dict
 from fastapi_listing.abstracts import TableDataSortingStrategy
 from fastapi_listing.typing import SqlAlchemyQuery
 
@@ -17,7 +17,7 @@ class SingletonSorterMechanics:
     """
 
     def apply(self, *, query: SqlAlchemyQuery = None, strategy: TableDataSortingStrategy = None,
-              sorting_params: list[dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:
+              sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:
         latest = sorting_params[-1]
         query = strategy.sort(query=query, value=latest, extra_context=extra_context)
         return query

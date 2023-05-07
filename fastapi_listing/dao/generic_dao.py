@@ -1,5 +1,6 @@
 from fastapi_listing.abstracts import DaoAbstract
 from sqlalchemy.orm import Session
+from typing import Union, Dict, List
 
 from fastapi_listing.typing import SqlAlchemyModel
 
@@ -40,8 +41,8 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
         # for future expansion once we decide to move on to read/write replica architecure
         # we already have groundwork done and only need to push different connections
         # from request lifecycle layer.
-        self._read_db: Session = read_db #kwargs.get("read_db")
-        self._write_db: Session = write_db #kwargs.get("write_db")
+        self._read_db: Session = read_db  # kwargs.get("read_db")
+        self._write_db: Session = write_db  # kwargs.get("write_db")
         # if self.model is None:
         #     raise ValueError("model class is not set!")
 
@@ -57,7 +58,7 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
     #     else:
     #         return type.__delattr__(cls, name)
 
-    def create(self, values: dict[str, str | int]) -> SqlAlchemyModel:
+    def create(self, values: Dict[str, Union[str, int]]) -> SqlAlchemyModel:
         """
         A light method that enters values in primary model table.
         single value at a time receives a dict implementation could map the dict with model values and
@@ -67,7 +68,7 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
         """
         raise NotImplementedError
 
-    def update(self, identifier: dict[str, str | int | list], values: dict) -> bool:
+    def update(self, identifier: Dict[str, Union[str, int, list]], values: dict) -> bool:
         """
         Similar to create method this receives an identifier
         :param identifier:
@@ -76,10 +77,11 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
         """
         raise NotImplementedError
 
-    def read(self, identifier: dict[str, str | int | list], fields: list | str = "__all__") -> SqlAlchemyModel:
+    def read(self, identifier: Dict[str, Union[str, int, list]],
+             fields: Union[list, str] = "__all__") -> SqlAlchemyModel:
         raise NotImplementedError
 
-    def delete(self, ids: list[int]) -> bool:
+    def delete(self, ids: List[int]) -> bool:
         raise NotImplementedError
 
     def get_naive_read(self, fields_to_read: list):
