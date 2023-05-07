@@ -43,7 +43,7 @@ setuptools.setup(
     python_requires=">=3.7",
     keywords=["starlette", "fastapi", "pydantic", "sqlalchemy"],
     extras_require={
-        "tests": [
+        "test": [
             "requests",
             "pytest>=6.2.4",
             "mypy>=0.971",
