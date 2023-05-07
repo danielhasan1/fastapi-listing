@@ -13,11 +13,10 @@ The FastAPI Listing Library is a Python library for building fast, flexible, and
  - Customizable formatting options, including sorting and filtering
  - Built-in support for pagination, sorting and filtering
  - Built-in support for SQLAlchemy
- - Support for a variety of list types, including ordered, unordered, and nested lists
+ - Well defined interface for filter, sorter, paginator
  - The most decoupled API
  - A built-in **semantic** for getting **filters/sorting parameters from clients**
  - Extend anything, swap modules on the fly write n number of versions/strategies
- - Built-in default filters with ease of extension
  - The most dry approach you will ever see and create
 
 ## Key Components that make a listing
@@ -33,7 +32,7 @@ The FastAPI Listing Library is a Python library for building fast, flexible, and
 Each and every component is provided as module that can be overwritten or extend or 
 create a new version with the help of given abstract base classes.
 
-I think all other components are self-explanatory but still I would like to add a little bit about dao
+I think all other components are self-explanatory but still I would like to add a little about dao
 
 The idea of a DAO is to keep the code of your application that does the business logic separate from the code that handles how you get and store the data.
 
@@ -219,6 +218,13 @@ def get_read_db():
         yield database
     finally:
         database.close()
+        
+# added support for read_db, write_db separately. I understand many users migh be using single db for
+# everything and they still could refere same session on read_db, write_db.
+# I would suggest using both as it will allow us to lay out future ground work for when we decide
+# to separate our db operation on basis of type. so once we decide to go with it it will only allow
+# us to easily implement things with minimal changes at the gateway i.e., router where we create db sessions.
+# rest of our code will look exactly same.
 
 @prod_v1.get("", response_model=ProductListingPageResp)
 def get_prod_mapping_listing(request: Request, read_db: Session = Depends(get_db),
@@ -271,7 +277,7 @@ def get_prod_mapping_listing(request: Request, read_db: Session = Depends(get_db
 ```
 
 # Customization
-
+## Adding our extendable query strategy which we can extend infinitely
 We also need to show updated by field in the listing 
 created_by and updated by could contain different user ids, so we need to handle 
 this by writing our own custom query lets see how we can implement this,
@@ -287,6 +293,8 @@ class ProductDetailsV2(ProductDetails):
 ```python
 
 # in dao file we will be adding a new method
+# segregating the query call we could also name the query as abc_query_v1 to add named versions
+# so if we are changing our query we won't change the original one but add a new version.
 
 from fastapi_listing.typing import SqlAlchemyQuery
 from sqlalchemy.orm import aliased
@@ -324,7 +332,8 @@ class ProductDao(ClassicDaoFeatures): # ClassicDaoFeatures is a baseclass contai
 now we will create a new file in our strategy folder
 
 ```python
-# product query strategy file
+# product query strategy file - a handler to call required query from dao laye, this interface decides
+# what you want to access and how you want to access it
 from fastapi_listing.strategies import NaiveQueryStrategy
 from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
 from fastapi_listing.factory import strategy_factory
@@ -427,6 +436,52 @@ data, hasNext etc
 We can write our own custom paginator or extend the existing one
 to support our existing client side page rendering logic.
 
+```python
+# Default pagination strategy
+# want to change it import it 
+# this is where you prepare your page. you can write n number of versions
+# and still manage your code beautifully
+
+
+# from  fastapi_listing.strategies import NaivePaginationStrategy
+
+
+
+class NaivePaginationStrategy(TableDataPaginatingStrategy):
+    """
+    Loosely coupled paginator module.
+    design your own paginator as you want.
+    you can even decide which request param you want to use as paginator identifier
+    by default we take it as ?pagination={"pageSize": 10, "page": 0}
+    """
+
+    default_pagination_params = {"pageSize": 10, "page": 0} # orchestrator will read these
+    
+    PAGE_TEMPLATE = {"data": None, "hasNext": None, "totalCount": None,
+                     "currentPageSize": None, "currentPageNumber": None}
+
+    def paginate(self, query: SqlAlchemyQuery, request: FastapiRequest, extra_context: dict):
+        pagination_params = self.default_pagination_params
+        try:
+            pagination_params = utils.jsonify_query_params(request.query_params.get('pagination')) \
+                if request.query_params.get('pagination') else pagination_params
+        except JSONDecodeError:
+            raise ListingPaginatorError("pagination params are not valid json!")
+        count = query.count()
+        has_next = True if count - ((pagination_params.get('page')) * pagination_params.get('pageSize')) > \
+                           pagination_params.get('pageSize') else False
+        current_page_size = pagination_params.get("pageSize")
+        current_page_number = pagination_params.get("page")
+        query = query.limit(
+            pagination_params.get('pageSize')
+        ).offset(
+            (pagination_params.get('page')) * pagination_params.get('pageSize')
+        )
+        page = dict(data=query.all(), hasNext=has_next, totalCount=count, currentPageSize=current_page_size,
+                    currentPageNumber=current_page_number)
+        return page
+```
+
 
 ## Client Site Filter Semantic
 
@@ -435,9 +490,9 @@ with this it can distinguish whether to apply listing filter or not
 
 if your api call is `/v1/products` and if you want to apply a name filter
 then client side should send a query param with reserved key like
-`filter=[{"field":"pn","value":{"search":"Some name"}]`
+`?filter=[{"field":"pn","value":{"search":"Some name"}]`
  similarly for sorter
-`sort=[{"field":"crat" "type":asc}]`
+`?sort=[{"field":"crat" "type":asc}]` and `?pagination={"pageSize": 10, "page": 0}`
 fastapi-listing will extract these two keys value and use them to process listing data.
 `filter` is a list, supports multiple json object which get applied.
 **note** here we are using aliases and not the actual field names to avoid exposing
