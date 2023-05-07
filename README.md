@@ -275,6 +275,30 @@ def get_prod_mapping_listing(request: Request, read_db: Session = Depends(get_db
     "totalCount": 4
 }
 ```
+## Client Site Filter Semantic
+
+fastapi-listing support has built-in filter semantics rule
+with this it can distinguish whether to apply listing filter or not. 
+
+Rreserved `filter` keyword in uri, it highlights that client want to send everything that is coupled with this keyword
+will be traversed by fastapi-listing library.
+
+example - 
+if your api call is `/v1/products` and if you want to apply a name filter
+then client side should send a query param with reserved key like
+`?filter=[{"field":"pn","value":{"search":"Some name"}]`
+
+just like this other filters should append inside the list as well.
+`?filter=[{"field":"pn","value":{"search":"Some name"}, {"field":"ia","value":{"search":true}]`
+ 
+similarly for sorter
+`?sort=[{"field":"crat" "type":asc}]` and `?pagination={"pageSize": 10, "page": 0}`
+fastapi-listing will extract all three keys value and use them to process listing data.
+
+**note** here we are using aliases and not the actual field names to avoid exposing
+our fields or table information to avoid any possible injection attacks.
+mappers are provided to our listing services to deduce actual fields at runtime.
+
 
 # Customization
 ## Adding our extendable query strategy which we can extend infinitely
@@ -453,6 +477,10 @@ class NaivePaginationStrategy(TableDataPaginatingStrategy):
     design your own paginator as you want.
     you can even decide which request param you want to use as paginator identifier
     by default we take it as ?pagination={"pageSize": 10, "page": 0}
+    Inherit from this class change pagination as you may like,
+    plug this pagination to your listing service
+    register this strategy with factory and voila
+    you can see your page rendering just like you defined
     """
 
     default_pagination_params = {"pageSize": 10, "page": 0} # orchestrator will read these
@@ -463,11 +491,17 @@ class NaivePaginationStrategy(TableDataPaginatingStrategy):
     def paginate(self, query: SqlAlchemyQuery, request: FastapiRequest, extra_context: dict):
         pagination_params = self.default_pagination_params
         try:
+            # extracting pagination queryparam given by client request
+            # if not given then will be using default_pagination_params
             pagination_params = utils.jsonify_query_params(request.query_params.get('pagination')) \
                 if request.query_params.get('pagination') else pagination_params
         except JSONDecodeError:
             raise ListingPaginatorError("pagination params are not valid json!")
         count = query.count()
+        # mysql limit offset logic to paginate table data.
+        # not recommended for large tables 
+        # implement your own pagination class or extend this as much as you like
+        # for as many listing as you like with clean/clear/dry/decoupled codeflow.
         has_next = True if count - ((pagination_params.get('page')) * pagination_params.get('pageSize')) > \
                            pagination_params.get('pageSize') else False
         current_page_size = pagination_params.get("pageSize")
@@ -477,26 +511,39 @@ class NaivePaginationStrategy(TableDataPaginatingStrategy):
         ).offset(
             (pagination_params.get('page')) * pagination_params.get('pageSize')
         )
+        # page response which will finally be delivered back to client site for rendering or processing
         page = dict(data=query.all(), hasNext=has_next, totalCount=count, currentPageSize=current_page_size,
                     currentPageNumber=current_page_number)
         return page
 ```
 
+```python
 
-## Client Site Filter Semantic
+"""
+Many filters are provided built in to ease your life, still you can create your own filters
+on the fly, inherit existing filters or write your custom ones it easier than ever.
 
-fastapi-listing support has built-in filter semantics rule
-with this it can distinguish whether to apply listing filter or not
+filter definition is in 
+from fastapi_listing.filters import generic_filters 
+"""
+# filter definition
+# you can take inspiration of how you may wanna create your own custom filter
+# check out CommonFilterImpl to see provided class attribute 
+class EqualityFilter(CommonFilterImpl):
+    
+    # method which will filter the query
+    def filter(self, *, field=None, value=None, query=None) -> SqlAlchemyQuery:
+        # not following the standard way of adding fields, pass your own hook
+        # to extract fields as you like
+        inst_field = self.extract_field(field)
+        if value:
+            query = query.filter(inst_field == value.get("search"))
+        # filtered query will be return to iterative filter mechanics
+        # if you have multiple filters then all filters will get applied lazily
+        # in iterative manner
+        return query
+```
 
-if your api call is `/v1/products` and if you want to apply a name filter
-then client side should send a query param with reserved key like
-`?filter=[{"field":"pn","value":{"search":"Some name"}]`
- similarly for sorter
-`?sort=[{"field":"crat" "type":asc}]` and `?pagination={"pageSize": 10, "page": 0}`
-fastapi-listing will extract these two keys value and use them to process listing data.
-`filter` is a list, supports multiple json object which get applied.
-**note** here we are using aliases and not the actual field names to avoid exposing
-our fields or table information to avoid any possible injection attacks.
 
 
 More info will be coming soon in docs.
