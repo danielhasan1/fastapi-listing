@@ -41,11 +41,13 @@ setuptools.setup(
         "Programming Language :: Python :: 3.11",
     ],
     python_requires=">=3.7",
-    keywords=["starlette", "fastapi", "starlite", "pydantic"],
+    keywords=["starlette", "fastapi", "pydantic", "sqlalchemy"],
     extras_require={
         "tests": [
             "requests",
+            "pytest>=6.2.4",
             "mypy>=0.971",
+            "pytest-env>=0.6.2",
             "flake8>=3.9.2",
             "isort>=5.10.1",
             "pydantic>=1.5.0",
@@ -53,6 +55,10 @@ setuptools.setup(
             "sqlalchemy>=2.0.7",
             "starlite>=1.38.0",
             "httpx>=0.23.0",
+            "pytest-mock>=3.6.1",
+            "fastapi>=0.92.0",
+            "mypy>=0.971",
+            "pytest-mypy>=0.9.1",
         ],
     },
 )
