@@ -8,11 +8,13 @@ from fastapi_listing.abstracts import TableDataPaginatingStrategy
 from fastapi_listing.typing import ListingResponseType
 from fastapi_listing.abstracts import ListingBase, ListingServiceBase
 from fastapi_listing.factory import strategy_factory
-from fastapi_listing.errors import ListingFilterError, ListingSorterError
+from fastapi_listing.errors import ListingFilterError, ListingSorterError, FastapiListingRequestSemanticApiException,\
+    NotRegisteredApiException
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing import constants
 import os
+from fastapi import HTTPException
 
 try:
     from pydantic import BaseModel
@@ -45,11 +47,12 @@ class FastapiListing(ListingBase):
         try:
             sorting_params: list[dict] = utils.jsonify_query_params(self.request.query_params.get("sort"))
         except JSONDecodeError:
-            raise ListingSorterError("sorter param is not a valid json!")
+            raise FastapiListingRequestSemanticApiException(status_code=422, detail="sorter param is not a valid json!")
 
         if temp := set(item.get("field") for item in sorting_params) - set(
                 listing_meta_info.sorting_column_mapper.keys()):
-            raise ListingSorterError(f"Sorter'(s) not registered with listing: {temp}, Did you forget to do it?")
+            raise NotRegisteredApiException(
+                status_code=409, detail=f"Sorter'(s) not registered with listing: {temp}, Did you forget to do it?")
         if sorting_params:
             sorting_params = self._replace_aliases(listing_meta_info.sorting_column_mapper, sorting_params)
         else:
@@ -98,10 +101,11 @@ class FastapiListing(ListingBase):
         try:
             fltrs: list[dict] = utils.jsonify_query_params(self.request.query_params.get("filter"))
         except JSONDecodeError:
-            raise ListingFilterError(f"filter param is not a valid json!")
+            raise FastapiListingRequestSemanticApiException(status_code=422, detail=f"filter param is not a valid json!")
 
         if temp := set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys()):
-            raise ListingFilterError(f"Filter'(s) not registered with listing: {temp}, Did you forget to do it?")
+            raise NotRegisteredApiException(
+                status_code=409, detail=f"Filter'(s) not registered with listing: {temp}, Did you forget to do it?")
 
         fltrs = self._replace_aliases(listing_meta_info.filter_column_mapper, fltrs)
 

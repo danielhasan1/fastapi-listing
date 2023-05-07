@@ -22,7 +22,7 @@ class SortingOrderStrategy(TableDataSortingStrategy):
              extra_context: dict = None) -> SqlAlchemyQuery:
         if value is None:
             raise ValueError("sort expects value with structure [type, field], none provided")
-        assert value["type"] in ["asc", "dsc"]
+        assert value["type"] in ["asc", "dsc"], "invalid sorting style!"
         inst_field: AnySqlAlchemyColumn = self.validate_srt_field(self.model, value["field"])
         if value["type"] == "asc":
             query = self.sort_asc_util(query, inst_field)

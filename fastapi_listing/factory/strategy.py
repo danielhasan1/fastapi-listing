@@ -5,6 +5,8 @@ class StrategyObjectFactory:
         self._strategy = {}
 
     def register_strategy(self, key: str, builder: type):
+        if key is None or not key:
+            raise ValueError(f"Invalid type key!")
         if key in self._strategy:
             raise ValueError(f"strategy name already in use with {self._strategy[key].__name__}!")
         if not isinstance(builder, object):

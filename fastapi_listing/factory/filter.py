@@ -4,7 +4,9 @@ class FilterObjectFactory:
     def __init__(self):
         self._filters = {}
 
-    def register_filter(self, key, builder):
+    def register_filter(self, key: str, builder):
+        if key is None or not key:
+            raise ValueError(f"Invalid type key!")
         if key in self._filters:
             raise ValueError(f"filter name already in use with {self._filters[key].__name__}!")
         self._filters[key] = builder

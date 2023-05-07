@@ -263,7 +263,7 @@ def get_prod_mapping_listing(request: Request, read_db: Session = Depends(get_db
         },
         {
             "pid": 9111894,
-            "pnm": "test",
+            "pnm": "tests",
             "ia": true,
             "crat": "05/05/2023, 23:47:02",
             "crby": "Hugh",
@@ -415,7 +415,7 @@ class ProductListingService(ListingService):
         },
         {
             "pid": 1112112,
-            "pnm": "test",
+            "pnm": "tests",
             "ia": true,
             "crat": "05/05/2023, 23:47:02",
             "crby": "Navdeep",

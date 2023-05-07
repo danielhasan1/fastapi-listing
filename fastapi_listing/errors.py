@@ -1,3 +1,6 @@
+from fastapi import HTTPException
+
+
 class FastapiListingError(BaseException):
     pass
 
@@ -11,4 +14,12 @@ class ListingSorterError(FastapiListingError):
 
 
 class ListingPaginatorError(FastapiListingError):
+    pass
+
+
+class NotRegisteredApiException(HTTPException):
+    pass
+
+
+class FastapiListingRequestSemanticApiException(HTTPException):
     pass
