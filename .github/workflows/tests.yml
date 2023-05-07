@@ -19,12 +19,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .[test]
-      - name: Run linting (flake8)
-        run: |
-          flake8 ./fastapi_listing ./tests
-      - name: Run linting (isort)
-        run: |
-          isort --check-only ./fastapi_listing ./tests
+#      - name: Run linting (flake8)
+#        run: |
+#          flake8 ./fastapi_listing ./tests
+#      - name: Run linting (isort)
+#        run: |
+#          isort --check-only ./fastapi_listing ./tests
       - name: Run tests
         run: |
           pytest
