@@ -3,7 +3,7 @@
 An Advanced Data Listing Library for fastapi
 
 [![.github/workflows/deploy.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml)
-![PyPI - Downloads](https://img.shields.io/pypi/dw/fastapi-listing)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/fastapi-listing)[![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml)
 
 The FastAPI Listing Library is a Python library for building fast, flexible, and customizable listing views in FastAPI web applications. It allows you to easily define listing views for your data models and customize the behavior of those views with minimal code.
 ## Features
