@@ -14,7 +14,7 @@ class NaiveQueryStrategy(QueryStrategy):
             # or fields that get generated from model fields.
             for field in field_list:
                 try:
-                    inst_fields.append(getattr(field, dao.model))
+                    inst_fields.append(getattr(dao.model, field))
                 except AttributeError:
                     pass
         else:

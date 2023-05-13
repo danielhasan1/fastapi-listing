@@ -3,7 +3,7 @@ from fastapi_listing.strategies import NaiveQueryStrategy, NaivePaginationStrate
 from fastapi_listing.factory import strategy_factory, filter_factory
 from fastapi_listing.filters import generic_filters
 from fastapi_listing.dao import GenericDao
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 from fastapi_listing import utils
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, Integer
@@ -38,6 +38,21 @@ fake_resp_aliased = [
     }
 ]
 
+fake_custom_column_resp_aliased = [
+    {
+        "id": 1,
+        "pn": "Hyundai Verna",
+        "ia": 1,
+        "cd": "1-HV"
+    },
+    {
+        "id": 2,
+        "pn": "Hyundai Centro",
+        "ia": 0,
+        "cd": "2-HC"
+    }
+]
+
 fake_resp_aliased_size_1 = [
     {
         "id": 1,
@@ -49,6 +64,14 @@ fake_db_query1 = "select * from fake_db"
 
 fake_db_response = {
     "data": fake_resp_aliased,
+    "totalCount": len(fake_db),
+    "currentPageSize": 10,
+    "currentPageNumber": 0,
+    "hasNext": False
+}
+
+fake_db_response_with_custom_column = {
+    "data": fake_custom_column_resp_aliased,
     "totalCount": len(fake_db),
     "currentPageSize": 10,
     "currentPageNumber": 0,
@@ -85,6 +108,38 @@ class ProductPage(BaseModel):
         allow_population_by_field_name = True
 
 
+class ProductDetailWithCustomFields(BaseModel):
+    id: int
+    product_name: str = Field(alias="pn")
+    is_active: bool = Field(alias="ia")
+    code: str | None = Field(alias="cd")
+
+    @root_validator
+    def generate_product_code(cls, values):
+        pnm = values["product_name"]
+        pnm = pnm.split()
+        cd = []
+        for nm in pnm:
+            cd.append(nm[:1])
+        values["code"] = f"{values['id']}-{''.join(cd)}"
+        return values
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class ProductPageWithCustomColumns(BaseModel):
+    data: List[ProductDetailWithCustomFields] = []
+    currentPageSize: int
+    currentPageNumber: int
+    hasNext: bool
+    totalCount: int
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+
 class Product(Base):
     __tablename__ = 'fake_product'
     id = Column(Integer, primary_key=True)
@@ -100,10 +155,16 @@ class FakeQueryStrategyV1(NaiveQueryStrategy):
 
     def get_query(self, *, request=None, dao=None,
                   extra_context: dict = None):
-        assert extra_context.get("field_list") == list(ProductDetail.__fields__.keys())
-        assert extra_context.get("custom_fields") == False
+
         assert dao.model == Product
         assert isinstance(dao, FakeProductDao) == True
+        if not extra_context.get("custom_fields"):
+            assert extra_context.get("field_list") == list(ProductDetail.__fields__.keys())
+            assert [Product.id, Product.product_name, Product.is_active] == \
+                   self.get_inst_attr_to_read(custom_fields=False, field_list=extra_context.get("field_list"), dao=dao)
+        else:
+            assert [Product.id, Product.product_name, Product.is_active] == \
+                   self.get_inst_attr_to_read(custom_fields=True, field_list=extra_context.get("field_list"), dao=dao)
         return fake_db_query1
 
 
@@ -147,6 +208,17 @@ class TestListingServiceDefaultFlow(ListingService):
         return FastapiListing(self.request, self.dao, ProductDetail).get_response(self.MetaInfo(self))
 
 
+class TestListingServiceDefaultFlowWithCustomColumns(ListingService):
+    DEFAULT_SRT_ON = "id"
+    dao_kls = FakeProductDao
+    QUERY_STRATEGY = "fake_query_strategy"
+    SORTING_STRATEGY = "fake_sorting_strategy"
+    PAGINATE_STRATEGY = "fake_paginator_strategy"
+
+    def get_listing(self):
+        return FastapiListing(self.request, self.dao, ProductDetailWithCustomFields, custom_fields=True).get_response(self.MetaInfo(self))
+
+
 class FakePaginationStrategyV2(NaivePaginationStrategy):
 
     def paginate(self, query, request, extra_context: dict):
@@ -165,7 +237,7 @@ class FakePaginationStrategyV2(NaivePaginationStrategy):
 strategy_factory.register_strategy("fake_paginator_strategy_v2", FakePaginationStrategyV2)
 
 
-class TestListinghServiceVariablePageFlow(ListingService):
+class TestListingServiceVariablePageFlow(ListingService):
     DEFAULT_SRT_ON = "id"
     dao_kls = FakeProductDao
     QUERY_STRATEGY = "fake_query_strategy"

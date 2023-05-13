@@ -3,8 +3,8 @@ from fastapi import FastAPI
 import pytest
 from fastapi.testclient import TestClient
 from .fake_listing_setup import ProductPage, TestListingServiceDefaultFlow, fake_db_response, \
-    fake_db_response_page_size_1, TestListinghServiceVariablePageFlow, TestListingServiceSortFlow, \
-    spawn_valueerror_for_strategy_registry, spawn_valueerror_for_filter_factory, invalid_type_factory_keys
+    fake_db_response_page_size_1, TestListingServiceVariablePageFlow, TestListingServiceSortFlow, \
+    spawn_valueerror_for_strategy_registry, spawn_valueerror_for_filter_factory, invalid_type_factory_keys, ProductPageWithCustomColumns, TestListingServiceDefaultFlowWithCustomColumns, fake_db_response_with_custom_column
 from fastapi_listing.errors import ListingFilterError
 
 app = FastAPI()
@@ -16,9 +16,15 @@ def read_main(request: Request):
     return resp
 
 
+@app.get("/custom-columns", response_model=ProductPageWithCustomColumns)
+def read_main_with_custom_fields(request: Request):
+    resp = TestListingServiceDefaultFlowWithCustomColumns(request, read_db="read_db_session", write_db="write_db_session").get_listing()
+    return resp
+
+
 @app.get("/var-page", response_model=ProductPage)
 def read_limit_1_page(request: Request):
-    resp = TestListinghServiceVariablePageFlow(request, read_db="read_db_session",
+    resp = TestListingServiceVariablePageFlow(request, read_db="read_db_session",
                                                write_db="write_db_session").get_listing()
     return resp
 
@@ -36,6 +42,12 @@ def test_call_default():
     response = client.get("/", params={"pagination": "%7B%22pageSize%22%3A10%2C%20%22page%22%3A0%7D"})
     assert response.status_code == 200
     assert response.json() == fake_db_response
+
+
+def test_call_default_flow_with_custom_columns():
+    response = client.get("/custom-columns", params={"pagination": "%7B%22pageSize%22%3A10%2C%20%22page%22%3A0%7D"})
+    assert response.status_code == 200
+    assert response.json() == fake_db_response_with_custom_column
 
 
 def test_call_variable_page():
