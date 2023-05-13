@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi_listing import FastapiListing, ListingService
 from fastapi_listing.strategies import NaiveQueryStrategy, NaivePaginationStrategy, SortingOrderStrategy
 from fastapi_listing.factory import strategy_factory, filter_factory
@@ -112,7 +113,7 @@ class ProductDetailWithCustomFields(BaseModel):
     id: int
     product_name: str = Field(alias="pn")
     is_active: bool = Field(alias="ia")
-    code: str | None = Field(alias="cd")
+    code: Optional[str] = Field(alias="cd")
 
     @root_validator
     def generate_product_code(cls, values):
