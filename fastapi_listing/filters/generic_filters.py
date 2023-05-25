@@ -1,3 +1,4 @@
+from typing import Callable
 from datetime import datetime
 
 from fastapi_listing.abstracts import FilterAbstract
@@ -6,7 +7,7 @@ from fastapi_listing.typing import SqlAlchemyQuery, AnySqlAlchemyColumn
 
 class CommonFilterImpl(FilterAbstract):
 
-    def __init__(self, dao=None, request=None, extra_context=None):
+    def __init__(self, dao=None, request=None, extra_context=None, field_extract_fn: Callable[[str], str] = None):
         self.dao = dao
         self.request = request
         self.extra_context = extra_context

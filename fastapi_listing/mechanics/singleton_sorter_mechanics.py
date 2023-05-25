@@ -1,9 +1,11 @@
 from typing import List, Dict
-from fastapi_listing.abstracts import TableDataSortingStrategy
+
+from fastapi_listing.abstracts import SorterMechanicsAbstracts
+from fastapi_listing.sorter import SortingOrderStrategy
 from fastapi_listing.typing import SqlAlchemyQuery
 
 
-class SingletonSorterMechanics:
+class SingletonSorterMechanics(SorterMechanicsAbstracts):
     """
     Singleton Sorter mechanic.
         # ideally sorting should only happen on one field multi field sorting puts
@@ -16,12 +18,9 @@ class SingletonSorterMechanics:
         # conditional sorting where if one param is applied then don't apply another specific one, etc.
     """
 
-    def apply(self, *, query: SqlAlchemyQuery = None, strategy: TableDataSortingStrategy = None,
+    def apply(self, *, query: SqlAlchemyQuery = None, strategy: SortingOrderStrategy = None,
               sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:
         latest = sorting_params[-1]
         query = strategy.sort(query=query, value=latest, extra_context=extra_context)
         return query
 
-
-# def register() -> None:
-#     generic_factory.register("singleton_sorter_mechanics", SingletonSorterMechanics)

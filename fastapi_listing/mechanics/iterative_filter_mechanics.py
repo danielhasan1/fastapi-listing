@@ -1,11 +1,12 @@
 from typing import List, Dict
-from fastapi_listing.factory import filter_factory, _generic_factory
+
+from fastapi_listing.abstracts import FilterMechanicsAbstracts
+from fastapi_listing.factory import filter_factory
 from fastapi_listing.filters import CommonFilterImpl
 from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
 
-class IterativeFilterMechanics:
-
+class IterativeFilterMechanics(FilterMechanicsAbstracts):
     """
     Iterative Filter Applicator.
     Applies all client site filter in iterative manner.
@@ -13,7 +14,7 @@ class IterativeFilterMechanics:
 
     User can write their own applicator if they don't want iterative applicator
     or have more complex way to apply filter like
-    if one filter is applied then don't apply the other one vice versa.
+    if one filter is applied, then don't apply the other one vice versa.
     to give a real world example
     if user has applied city, pincode, region filter then
     pincode is the most atomic unit here region and city filters are just extra burden on query and db as well.
@@ -32,7 +33,3 @@ class IterativeFilterMechanics:
                                       value=applied_filter.get("value"),
                                       query=query)
         return query
-
-
-# def register() -> None:
-#     generic_factory.

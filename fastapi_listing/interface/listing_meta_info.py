@@ -3,8 +3,8 @@ try:
 except ImportError:
     from typing_extensions import Protocol
 from typing import Dict
+
 from fastapi_listing.abstracts import TableDataSortingStrategy, TableDataPaginatingStrategy, QueryStrategy
-from fastapi_listing.sorter import SortingOrderStrategy
 
 
 class ListingMetaInfo(Protocol):
@@ -46,8 +46,7 @@ class ListingMetaInfo(Protocol):
     #     ...
 
     @property
-    def extra_context() -> dict: #type: ignore # noqa
+    def extra_context() -> dict:  # type: ignore # noqa
         ...
-
 
     # where should a protocol file live
