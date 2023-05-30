@@ -5,6 +5,8 @@ from fastapi_listing.typing import SqlAlchemyModel, FastapiRequest, SqlAlchemyQu
 
 class SortingOrderStrategy(TableDataSortingStrategy):
 
+    NAME = "naive_sorter"
+
     def __init__(self, model: SqlAlchemyModel = None, request: FastapiRequest = None):
         self.model = model
         self.request = request

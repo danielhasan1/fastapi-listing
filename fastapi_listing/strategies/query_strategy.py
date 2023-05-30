@@ -5,6 +5,8 @@ from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
 class NaiveQueryStrategy(QueryStrategy):
 
+    NAME = "naive_query"
+
     def get_inst_attr_to_read(self, custom_fields: bool, field_list: list, dao: GenericDao):
         inst_fields = []
 

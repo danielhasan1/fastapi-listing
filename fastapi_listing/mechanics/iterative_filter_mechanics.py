@@ -5,6 +5,8 @@ from fastapi_listing.factory import filter_factory
 from fastapi_listing.filters import CommonFilterImpl
 from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
+NAME = "iterative_filter_mechanics"
+
 
 class IterativeFilterMechanics(FilterMechanicsAbstracts):
     """

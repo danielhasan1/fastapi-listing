@@ -4,6 +4,8 @@ from fastapi_listing.abstracts import SorterMechanicsAbstracts
 from fastapi_listing.sorter import SortingOrderStrategy
 from fastapi_listing.typing import SqlAlchemyQuery
 
+NAME = "singleton_sorter_mechanics"
+
 
 class SingletonSorterMechanics(SorterMechanicsAbstracts):
     """

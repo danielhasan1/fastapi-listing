@@ -9,6 +9,7 @@ class NaivePaginationStrategy(TableDataPaginatingStrategy):
     """
     Loosely coupled paginator module.
     """
+    NAME = "naive_paginator"
 
     default_pagination_params = {"pageSize": 10, "page": 0}
     PAGE_TEMPLATE = {"data": None, "hasNext": None, "totalCount": None,
