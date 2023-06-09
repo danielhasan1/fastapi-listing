@@ -4,17 +4,17 @@ except ImportError:
     from typing_extensions import Protocol
 from typing import Dict
 
-from fastapi_listing.abstracts import TableDataSortingStrategy, TableDataPaginatingStrategy, QueryStrategy
+from fastapi_listing.abstracts import AbsSortingStrategy, AbsPaginatingStrategy, AbsQueryStrategy
 
 
 class ListingMetaInfo(Protocol):
 
     @property
-    def paginating_strategy() -> TableDataPaginatingStrategy:  # type:ignore # noqa
+    def paginating_strategy() -> AbsPaginatingStrategy:  # type:ignore # noqa
         ...
 
     @property
-    def query_strategy() -> QueryStrategy:  # type:ignore # noqa
+    def query_strategy() -> AbsQueryStrategy:  # type:ignore # noqa
         ...
 
     @property
@@ -26,7 +26,7 @@ class ListingMetaInfo(Protocol):
         ...
 
     @property
-    def sorting_strategy() -> TableDataSortingStrategy:  # type:ignore # noqa
+    def sorting_strategy() -> AbsSortingStrategy:  # type:ignore # noqa
         ...
 
     @property

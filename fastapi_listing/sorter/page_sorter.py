@@ -1,11 +1,11 @@
 from typing import Dict
-from fastapi_listing.abstracts import TableDataSortingStrategy
+from fastapi_listing.abstracts import AbsSortingStrategy
 from fastapi_listing.typing import SqlAlchemyModel, FastapiRequest, SqlAlchemyQuery, AnySqlAlchemyColumn
 
 
-class SortingOrderStrategy(TableDataSortingStrategy):
+class SortingOrderStrategy(AbsSortingStrategy):
 
-    NAME = "naive_sorter"
+    NAME = "default_sorter"
 
     def __init__(self, model: SqlAlchemyModel = None, request: FastapiRequest = None):
         self.model = model

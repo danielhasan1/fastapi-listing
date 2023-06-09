@@ -3,7 +3,7 @@ from fastapi_listing.typing import SqlAlchemyQuery
 from typing import Dict
 
 
-class TableDataSortingStrategy(ABC):
+class AbsSortingStrategy(ABC):
 
     @abstractmethod
     def sort(self, *, query: SqlAlchemyQuery = None, value: Dict[str, str],

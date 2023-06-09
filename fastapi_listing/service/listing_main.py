@@ -13,9 +13,9 @@ class ListingService(ListingServiceBase):  # noqa
     # factory should deliver sorting resource
     # DEFAULT_SRT_ON: str = "created_at" # to be taken by user at child class level
     DEFAULT_SRT_ORD: str = "dsc"
-    PAGINATE_STRATEGY: str = "naive_paginator"
-    QUERY_STRATEGY: str = "naive_query"
-    SORTING_STRATEGY: str = "naive_sorter"
+    PAGINATE_STRATEGY: str = "default_paginator"
+    QUERY_STRATEGY: str = "default_query"
+    SORTING_STRATEGY: str = "default_sorter"
     SORT_MECHA: str = "singleton_sorter_mechanics"
     FILTER_MECHA: str = "iterative_filter_mechanics"
     dao_kls: GenericDao = GenericDao

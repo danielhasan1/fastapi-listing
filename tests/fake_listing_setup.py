@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi_listing import FastapiListing, ListingService
-from fastapi_listing.strategies import NaiveQueryStrategy, NaivePaginationStrategy, SortingOrderStrategy
+from fastapi_listing.strategies import QueryStrategy, PaginationStrategy, SortingOrderStrategy
 from fastapi_listing.factory import strategy_factory, filter_factory
 from fastapi_listing.filters import generic_filters
 from fastapi_listing.dao import GenericDao
@@ -152,7 +152,7 @@ class FakeProductDao(GenericDao):  # noqa
     model = Product
 
 
-class FakeQueryStrategyV1(NaiveQueryStrategy):
+class FakeQueryStrategyV1(QueryStrategy):
 
     def get_query(self, *, request=None, dao=None,
                   extra_context: dict = None):
@@ -178,10 +178,10 @@ class FakeSortingStrategy(SortingOrderStrategy):
         return query
 
 
-class FakePaginationStrategyV1(NaivePaginationStrategy):
+class FakePaginationStrategyV1(PaginationStrategy):
 
     def paginate(self, query, request, extra_context: dict):
-        pagination_params = utils.jsonify_query_params(request.query_params.get("pagination"))
+        pagination_params = utils.dictify_query_params(request.query_params.get("pagination"))
         assert pagination_params == self.default_pagination_params
         assert query == fake_db_query1
         return {
@@ -220,10 +220,10 @@ class TestListingServiceDefaultFlowWithCustomColumns(ListingService):
         return FastapiListing(self.request, self.dao, ProductDetailWithCustomFields, custom_fields=True).get_response(self.MetaInfo(self))
 
 
-class FakePaginationStrategyV2(NaivePaginationStrategy):
+class FakePaginationStrategyV2(PaginationStrategy):
 
     def paginate(self, query, request, extra_context: dict):
-        pagination_params = utils.jsonify_query_params(request.query_params.get("pagination"))
+        pagination_params = utils.dictify_query_params(request.query_params.get("pagination"))
         assert pagination_params == {"pageSize": 1, "page": 0}
         assert query == fake_db_query1
         return {

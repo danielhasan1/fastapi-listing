@@ -82,9 +82,9 @@ An abstract base class containing an abstractmethod ``get_query`` this class wil
 
 Default implementation of `QUERY STRATEGY`::
 
-    from fastapi_listing.strategies import NaiveQueryStrategy
+    from fastapi_listing.strategies import QueryStrategy
 
-The **NaiveQueryStrategy** class contains a default implementation for fetching base query with the help of dao object.
+The **QueryStrategy** class contains a default implementation for fetching base query with the help of dao object.
 
 
 
@@ -94,7 +94,7 @@ Sorting Strategy
 This component is responsible for applying sorting scheme that is whether you want your data in an ascending order
 or descending order on basis of a particular column or logic.
 
-.. py:class:: abstracts.TableDataSortingStrategy
+.. py:class:: abstracts.AbsSortingStrategy
 
 An abstract base class containing an abstractmethod ``sort`` this class acts as base for all SortingStrategy classes
 
@@ -110,7 +110,7 @@ Pagination Strategy
 
 This component applies slicing technique on implicitly shared query and prepares a complete page response that will be returned to client.
 
-.. py:class:: abstracts.TableDataPaginatingStrategy
+.. py:class:: abstracts.AbsPaginatingStrategy
 
 .. py:attribute:: default_pagination_params
 
@@ -120,9 +120,9 @@ An abstract base class containing ab abstractmethod ``paginate`` his class acts 
 
 Default implementation of `Paginating Strategy`::
 
-    from fastapi_listing.strategies import NaivePaginationStrategy
+    from fastapi_listing.strategies import PaginationStrategy
 
-The **NaivePaginationStrategy** class is responsible for applying default limit offset data slicing strategy. it also supports variable
+The **PaginationStrategy** class is responsible for applying default limit offset data slicing strategy. it also supports variable
 page size response and default page size.
 
 The Filters layer

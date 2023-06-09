@@ -1,15 +1,16 @@
 from json import JSONDecodeError
+
 from fastapi_listing import utils
-from fastapi_listing.abstracts import TableDataPaginatingStrategy
+from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.errors import ListingPaginatorError
 from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
 
-class NaivePaginationStrategy(TableDataPaginatingStrategy):
+class PaginationStrategy(AbsPaginatingStrategy):
     """
     Loosely coupled paginator module.
     """
-    NAME = "naive_paginator"
+    NAME = "default_paginator"
 
     default_pagination_params = {"pageSize": 10, "page": 0}
     PAGE_TEMPLATE = {"data": None, "hasNext": None, "totalCount": None,
@@ -18,7 +19,7 @@ class NaivePaginationStrategy(TableDataPaginatingStrategy):
     def paginate(self, query: SqlAlchemyQuery, request: FastapiRequest, extra_context: dict):
         pagination_params = self.default_pagination_params
         try:
-            pagination_params = utils.jsonify_query_params(request.query_params.get('pagination')) \
+            pagination_params = utils.dictify_query_params(request.query_params.get('pagination')) \
                 if request.query_params.get('pagination') else pagination_params
         except JSONDecodeError:
             raise ListingPaginatorError("pagination params are not valid json!")

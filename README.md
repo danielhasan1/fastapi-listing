@@ -358,7 +358,7 @@ now we will create a new file in our strategy folder
 ```python
 # product query strategy file - a handler to call required query from dao laye, this interface decides
 # what you want to access and how you want to access it
-from fastapi_listing.strategies import NaiveQueryStrategy
+from fastapi_listing.strategies import QueryStrategy
 from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
 from fastapi_listing.factory import strategy_factory
 from app.dao import ProductDao
@@ -366,7 +366,7 @@ from app.dao import ProductDao
 NAME = "prod_query" # module name intentionally declaring a constant
 
 
-class ProductQueryStrategy(NaiveQueryStrategy):
+class ProductQueryStrategy(QueryStrategy):
 
     def get_query(self, *, request: FastapiRequest = None, dao: ProductDao = None,
                   extra_context: dict = None) -> SqlAlchemyQuery:
@@ -467,11 +467,11 @@ to support our existing client side page rendering logic.
 # and still manage your code beautifully
 
 
-# from  fastapi_listing.strategies import NaivePaginationStrategy
+# from  fastapi_listing.strategies import PaginationStrategy
 
 
 
-class NaivePaginationStrategy(TableDataPaginatingStrategy):
+class PaginationStrategy(AbsPaginatingStrategy):
     """
     Loosely coupled paginator module.
     design your own paginator as you want.
@@ -493,7 +493,7 @@ class NaivePaginationStrategy(TableDataPaginatingStrategy):
         try:
             # extracting pagination queryparam given by client request
             # if not given then will be using default_pagination_params
-            pagination_params = utils.jsonify_query_params(request.query_params.get('pagination')) \
+            pagination_params = utils.dictify_query_params(request.query_params.get('pagination')) \
                 if request.query_params.get('pagination') else pagination_params
         except JSONDecodeError:
             raise ListingPaginatorError("pagination params are not valid json!")

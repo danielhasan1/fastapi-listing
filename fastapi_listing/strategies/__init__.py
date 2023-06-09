@@ -1,5 +1,5 @@
-from fastapi_listing.strategies.query_strategy import NaiveQueryStrategy
-from fastapi_listing.paginator import NaivePaginationStrategy
+from fastapi_listing.strategies.query_strategy import QueryStrategy
+from fastapi_listing.paginator import PaginationStrategy
 from fastapi_listing.sorter import SortingOrderStrategy
 
 

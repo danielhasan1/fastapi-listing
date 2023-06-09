@@ -1,1 +1,1 @@
-from fastapi_listing.sorter.naive_page_sorter import SortingOrderStrategy
+from fastapi_listing.sorter.page_sorter import SortingOrderStrategy

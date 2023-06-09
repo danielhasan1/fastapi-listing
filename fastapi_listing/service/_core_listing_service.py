@@ -6,7 +6,7 @@ from sqlalchemy.orm import Query
 
 from fastapi_listing import utils
 from fastapi_listing.abstracts import ListingBase
-from fastapi_listing.abstracts import TableDataPaginatingStrategy
+from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
     NotRegisteredApiException
@@ -37,12 +37,15 @@ class FastapiListing(ListingBase):
     extend this class outside.
     """
 
-    def __init__(self, request: Request, dao: GenericDao, pydantic_serializer: Optional[Type[BaseModel]] = None,
-                 custom_fields: Optional[bool] = False) -> None:
+    def __init__(self, request: Request = None, dao: GenericDao = None, pydantic_serializer: Optional[Type[BaseModel]] = None,
+                 fields_to_fetch: List[str] = None,
+                 *, custom_fields: Optional[bool] = False) -> None:
         self.request = request
         self.dao = dao
         if HAS_PYDANTIC and pydantic_serializer:
             self.fields_to_fetch = list(pydantic_serializer.__fields__.keys())
+        elif fields_to_fetch:
+            self.fields_to_fetch = fields_to_fetch
         else:
             self.fields_to_fetch = []
         self.custom_fields = custom_fields
@@ -56,7 +59,7 @@ class FastapiListing(ListingBase):
 
     def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         try:
-            sorting_params: list[dict] = utils.jsonify_query_params(self.request.query_params.get("sort"))
+            sorting_params: List[dict] = utils.dictify_query_params(self.request.query_params.get("sort"))
         except JSONDecodeError:
             raise FastapiListingRequestSemanticApiException(status_code=422, detail="sorter param is not a valid json!")
         temp = set(item.get("field") for item in sorting_params) - set(
@@ -80,8 +83,15 @@ class FastapiListing(ListingBase):
         return query
 
     def _apply_filters(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
+        """
+        filter key
+        filter value
+        :param query:
+        :param listing_meta_info:
+        :return:
+        """
         try:
-            fltrs: list[dict] = utils.jsonify_query_params(self.request.query_params.get("filter"))
+            fltrs: List[dict] = utils.dictify_query_params(self.request.query_params.get("filter"))
         except JSONDecodeError:
             raise FastapiListingRequestSemanticApiException(status_code=422,
                                                             detail=f"filter param is not a valid json!")
@@ -101,7 +111,7 @@ class FastapiListing(ListingBase):
         query = launch_mechanics(query)
         return query
 
-    def _paginate(self, query: Query, paginate_strategy: TableDataPaginatingStrategy,
+    def _paginate(self, query: Query, paginate_strategy: AbsPaginatingStrategy,
                   extra_context: dict) -> ListingResponseType:
         page = paginate_strategy.paginate(query, self.request, extra_context)
         return page

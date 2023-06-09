@@ -2,8 +2,8 @@ from sqlalchemy.orm import Query
 from abc import ABC, abstractmethod
 from typing import Type
 
-from fastapi_listing.abstracts import TableDataSortingStrategy, \
-    TableDataPaginatingStrategy
+from fastapi_listing.abstracts import AbsSortingStrategy, \
+    AbsPaginatingStrategy
 from fastapi_listing.typing import ListingResponseType
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 
@@ -23,7 +23,7 @@ class ListingBase(ABC):
         pass
 
     @abstractmethod
-    def _paginate(self, query: Query, paginate_strategy: TableDataPaginatingStrategy,
+    def _paginate(self, query: Query, paginate_strategy: AbsPaginatingStrategy,
                   extra_context: dict) -> ListingResponseType:
         pass
 

@@ -241,11 +241,11 @@ way 1 - writing strategy at listing service level(if its easy and you know its g
 
     # user_service.py
 
-    from fastapi_listing.strategies import NaiveQueryStrategy
+    from fastapi_listing.strategies import QueryStrategy
     from fastapi_listing.factory import strategy_factory
 
 
-    class UserQueryStrategy(NaiveQueryStrategy):
+    class UserQueryStrategy(QueryStrategy):
 
         NAME = "user_query_v1"
 
@@ -281,7 +281,7 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
     from fastapi_listing.factory import strategy_factory
     from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
-    from fastapi_listing.strategies import NaiveQueryStrategy
+    from fastapi_listing.strategies import QueryStrategy
 
     from app.dao import UserDao
     from app.dao.model import User
@@ -290,7 +290,7 @@ way 2 - writing complex query strategy preferred way is create a separate module
     NAME = "user_query_v2"
 
 
-    class UserQueryStrategyV2(NaiveQueryStrategy):
+    class UserQueryStrategyV2(QueryStrategy):
 
         def get_query(self, *, request: FastapiRequest = None, dao: UserDao = None,
                       extra_context: dict = None) -> SqlAlchemyQuery:
@@ -366,15 +366,15 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
 .. py:attribute:: ListingService.PAGINATE_STRATEGY
 
-    defining listing service pagination strategy unique name. Default ``naive_paginator``
+    defining listing service pagination strategy unique name. Default ``default_paginator``
 
 .. py:attribute::  ListingService.QUERY_STRATEGY
 
-    defining listing service query strategy unique name. Default ``naive_query``
+    defining listing service query strategy unique name. Default ``default_query``
 
 .. py:attribute:: ListingService.SORTING_STRATEGY
 
-    defining listing service sorting strategy unique name. Default ``naive_sorter``
+    defining listing service sorting strategy unique name. Default ``default_sorter``
 
 .. py:attribute:: ListingService.SORT_MECHA
 

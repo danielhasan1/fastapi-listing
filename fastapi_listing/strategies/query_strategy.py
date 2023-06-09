@@ -1,11 +1,11 @@
-from fastapi_listing.abstracts import QueryStrategy
+from fastapi_listing.abstracts import AbsQueryStrategy
 from fastapi_listing.dao import GenericDao
 from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
 
-class NaiveQueryStrategy(QueryStrategy):
+class QueryStrategy(AbsQueryStrategy):
 
-    NAME = "naive_query"
+    NAME = "default_query"
 
     def get_inst_attr_to_read(self, custom_fields: bool, field_list: list, dao: GenericDao):
         inst_fields = []

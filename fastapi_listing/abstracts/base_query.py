@@ -4,7 +4,7 @@ from fastapi_listing.abstracts import DaoAbstract
 from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
 
 
-class QueryStrategy(ABC):
+class AbsQueryStrategy(ABC):
 
     @abstractmethod
     def get_query(self, *, request: FastapiRequest = None, dao: DaoAbstract = None,

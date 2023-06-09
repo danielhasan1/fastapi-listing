@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
 
 
-class TableDataPaginatingStrategy(ABC):
+class AbsPaginatingStrategy(ABC):
 
     @property
     @abstractmethod
