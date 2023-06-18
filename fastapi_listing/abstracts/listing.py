@@ -4,7 +4,7 @@ from typing import Type
 
 from fastapi_listing.abstracts import AbsSortingStrategy, \
     AbsPaginatingStrategy
-from fastapi_listing.typing import ListingResponseType
+from fastapi_listing.ctyping import ListingResponseType
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 
 

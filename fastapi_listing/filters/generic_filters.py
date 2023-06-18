@@ -2,7 +2,7 @@ from typing import Callable
 from datetime import datetime
 
 from fastapi_listing.abstracts import FilterAbstract
-from fastapi_listing.typing import SqlAlchemyQuery, AnySqlAlchemyColumn
+from fastapi_listing.ctyping import SqlAlchemyQuery, AnySqlAlchemyColumn
 
 
 class CommonFilterImpl(FilterAbstract):

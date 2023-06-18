@@ -1,6 +1,6 @@
 from fastapi_listing.abstracts import AbsQueryStrategy
 from fastapi_listing.dao import GenericDao
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
 class QueryStrategy(AbsQueryStrategy):

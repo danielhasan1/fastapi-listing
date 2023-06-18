@@ -2,7 +2,7 @@ from typing import List, Dict
 
 from fastapi_listing.abstracts import SorterMechanicsAbstracts
 from fastapi_listing.sorter import SortingOrderStrategy
-from fastapi_listing.typing import SqlAlchemyQuery
+from fastapi_listing.ctyping import SqlAlchemyQuery
 
 NAME = "singleton_sorter_mechanics"
 

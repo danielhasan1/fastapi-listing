@@ -2,7 +2,7 @@ from fastapi_listing.abstracts import DaoAbstract
 from sqlalchemy.orm import Session
 from typing import Union, Dict, List
 
-from fastapi_listing.typing import SqlAlchemyModel
+from fastapi_listing.ctyping import SqlAlchemyModel
 
 
 class GenericDao(DaoAbstract):  # type:ignore # noqa

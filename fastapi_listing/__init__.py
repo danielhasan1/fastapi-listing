@@ -2,6 +2,7 @@ from fastapi_listing.factory import strategy_factory
 from fastapi_listing.strategies import QueryStrategy, PaginationStrategy, SortingOrderStrategy
 from fastapi_listing.service import ListingService, FastapiListing
 from fastapi_listing.mechanics import IterativeFilterMechanics, SingletonSorterMechanics
+import fastapi_listing.ctyping as typing
 
 
 __version__ = "0.0.9"

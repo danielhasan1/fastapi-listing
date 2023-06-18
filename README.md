@@ -314,19 +314,21 @@ class ProductDetailsV2(ProductDetails):
     updated_at: datetime = Field(alias="upat")
     updated_by: str = Field(alias="upby")
 ```
+
 ```python
 
 # in dao file we will be adding a new method
 # segregating the query call we could also name the query as abc_query_v1 to add named versions
 # so if we are changing our query we won't change the original one but add a new version.
 
-from fastapi_listing.typing import SqlAlchemyQuery
+from fastapi_listing.ctyping import SqlAlchemyQuery
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import functions
 from app.dao.model import Product, User
 
-class ProductDao(ClassicDaoFeatures): # ClassicDaoFeatures is a baseclass containing generic helper methods
-    model = Product # required property, linking our model.
+
+class ProductDao(ClassicDaoFeatures):  # ClassicDaoFeatures is a baseclass containing generic helper methods
+    model = Product  # required property, linking our model.
 
     def get_base_query(self) -> SqlAlchemyQuery:
         # Our custom query
@@ -359,11 +361,11 @@ now we will create a new file in our strategy folder
 # product query strategy file - a handler to call required query from dao laye, this interface decides
 # what you want to access and how you want to access it
 from fastapi_listing.strategies import QueryStrategy
-from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
+from fastapi_listing.ctyping import FastapiRequest, SqlAlchemyQuery
 from fastapi_listing.factory import strategy_factory
 from app.dao import ProductDao
 
-NAME = "prod_query" # module name intentionally declaring a constant
+NAME = "prod_query"  # module name intentionally declaring a constant
 
 
 class ProductQueryStrategy(QueryStrategy):
@@ -374,8 +376,7 @@ class ProductQueryStrategy(QueryStrategy):
         return query
 
 
-
-strategy_factory.register_strategy(NAME, ProductDao) # registering our strategy with unique name
+strategy_factory.register_strategy(NAME, ProductDao)  # registering our strategy with unique name
 
 ```
 

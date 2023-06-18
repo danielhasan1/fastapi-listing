@@ -3,7 +3,7 @@ from typing import List, Dict
 from fastapi_listing.abstracts import FilterMechanicsAbstracts
 from fastapi_listing.factory import filter_factory
 from fastapi_listing.filters import CommonFilterImpl
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 NAME = "iterative_filter_mechanics"
 

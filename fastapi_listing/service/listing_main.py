@@ -12,12 +12,12 @@ class ListingService(ListingServiceBase):  # noqa
     # here resource creation should be based on factory and not inline as we are separating creation from usage.
     # factory should deliver sorting resource
     # DEFAULT_SRT_ON: str = "created_at" # to be taken by user at child class level
-    DEFAULT_SRT_ORD: str = "dsc"
-    PAGINATE_STRATEGY: str = "default_paginator"
-    QUERY_STRATEGY: str = "default_query"
-    SORTING_STRATEGY: str = "default_sorter"
-    SORT_MECHA: str = "singleton_sorter_mechanics"
-    FILTER_MECHA: str = "iterative_filter_mechanics"
+    default_sort_on: str = "dsc"
+    paginate_strategy: str = "default_paginator"
+    query_strategy: str = "default_query"
+    sorting_strategy: str = "default_sorter"
+    sort_mecha: str = "singleton_sorter_mechanics"
+    filter_mecha: str = "iterative_filter_mechanics"
     dao_kls: GenericDao = GenericDao
 
     # pydantic_serializer: Type[BaseModel] = None
@@ -77,19 +77,19 @@ class ListingService(ListingServiceBase):  # noqa
 
         def __init__(self, outer_instance):
             self.paginating_strategy = strategy_factory.create(
-                outer_instance.PAGINATE_STRATEGY)
+                outer_instance.paginate_strategy)
             self.filter_column_mapper = outer_instance.filter_mapper
-            self.query_strategy = strategy_factory.create(outer_instance.QUERY_STRATEGY)
+            self.query_strategy = strategy_factory.create(outer_instance.query_strategy)
             self.sorting_column_mapper = outer_instance.sort_mapper
-            self.default_sort_val = dict(type=outer_instance.DEFAULT_SRT_ORD,
-                                         field=outer_instance.DEFAULT_SRT_ON)
+            self.default_sort_val = dict(type=outer_instance.default_srt_ord,
+                                         field=outer_instance.default_srt_on)
             self.sorting_strategy = strategy_factory.create(
-                outer_instance.SORTING_STRATEGY,
+                outer_instance.sorting_strategy,
                 model=outer_instance.dao.model,
                 request=outer_instance.request
             )
-            self.sorter_mechanic = outer_instance.SORT_MECHA
-            self.filter_mechanic = outer_instance.FILTER_MECHA
+            self.sorter_mechanic = outer_instance.sort_mecha
+            self.filter_mechanic = outer_instance.filter_mecha
             self.extra_context = outer_instance.extra_context
 
     def meta_info_generator(self) -> ListingMetaInfo:

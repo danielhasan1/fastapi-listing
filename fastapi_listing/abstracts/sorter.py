@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from fastapi_listing.typing import SqlAlchemyQuery
+from fastapi_listing.ctyping import SqlAlchemyQuery
 from typing import Dict
 
 

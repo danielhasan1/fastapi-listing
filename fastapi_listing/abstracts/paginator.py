@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
 class AbsPaginatingStrategy(ABC):

@@ -3,7 +3,7 @@ from json import JSONDecodeError
 from fastapi_listing import utils
 from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.errors import ListingPaginatorError
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
 class PaginationStrategy(AbsPaginatingStrategy):
