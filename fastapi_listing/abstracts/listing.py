@@ -6,6 +6,8 @@ from fastapi_listing.abstracts import AbsSortingStrategy, \
     AbsPaginatingStrategy
 from fastapi_listing.ctyping import ListingResponseType
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
+from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
+from fastapi_listing.dao import GenericDao
 
 
 class ListingBase(ABC):
@@ -23,8 +25,7 @@ class ListingBase(ABC):
         pass
 
     @abstractmethod
-    def _paginate(self, query: Query, paginate_strategy: AbsPaginatingStrategy,
-                  extra_context: dict) -> ListingResponseType:
+    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
         pass
 
     @abstractmethod
@@ -46,42 +47,47 @@ class ListingServiceBase(ABC):
 
     @property
     @abstractmethod
-    def DEFAULT_SRT_ON(self) -> str:  # type:ignore # noqa
+    def default_srt_on(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def DEFAULT_SRT_ORD(self) -> str:  # type:ignore # noqa
+    def default_srt_ord(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def PAGINATE_STRATEGY(self) -> str:  # type:ignore # noqa
+    def paginate_strategy(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def QUERY_STRATEGY(self) -> str:  # type:ignore # noqa
+    def query_strategy(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def SORTING_STRATEGY(self) -> str:  # type:ignore # noqa
+    def sorting_strategy(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def SORT_MECHA(self) -> str:  # type:ignore # noqa
+    def sort_mecha(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def FILTER_MECHA(self) -> str:  # type:ignore # noqa
+    def filter_mecha(self) -> str:  # type:ignore # noqa
         ...
 
     @property
     @abstractmethod
-    def dao_kls(self) -> str:  # type:ignore # noqa
+    def default_dao(self) -> GenericDao:  # type:ignore # noqa
+        ...
+
+    @property
+    @abstractmethod
+    def feature_params_adapter(self) -> ClientSiteParamAdapter:
         ...
 
     @abstractmethod

@@ -32,6 +32,7 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
     """
 
     # model: SqlAlchemyModel = None to be defined at model dao level
+    # name: str = "DaoName"
 
     def __init__(self, read_db=None, write_db=None):
         # considering that we are dealing with separate read and write dbs.

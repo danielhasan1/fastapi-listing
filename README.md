@@ -169,7 +169,7 @@ class ProductListingService(ListingService):
     }
     
     # default sorting column to use when api is called raw
-    DEFAULT_SRT_ON = ProductDao.model.created_at.name #required
+    default_srt_on = ProductDao.model.created_at.name #required
     dao_kls = ProductDao # required
 
     def get_listing(self):
@@ -392,9 +392,9 @@ class ProductListingService(ListingService):
         "pnm": "Product.product_name",
         "ia": "Product.is_active",
     }
-    DEFAULT_SRT_ON = LgxAsmtProdMapDao.model.created_at.name
+    default_srt_on = LgxAsmtProdMapDao.model.created_at.name
     dao_kls = LgxAsmtProdMapDao
-    QUERY_STRATEGY = prod_query_strtg.NAME # linking our query strategy
+    query_strategy = prod_query_strtg.NAME # linking our query strategy
 
     def get_listing(self):
         # note here we have removed pydantic class to load fields 

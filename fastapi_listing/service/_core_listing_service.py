@@ -1,15 +1,12 @@
-from json import JSONDecodeError
 from typing import Type, Optional, Dict, List
 
 from fastapi import Request
 from sqlalchemy.orm import Query
 
-from fastapi_listing import utils
 from fastapi_listing.abstracts import ListingBase
-from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
-    NotRegisteredApiException
+    NotRegisteredApiException, ListingPaginatorError
 from fastapi_listing.factory import strategy_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
@@ -37,7 +34,8 @@ class FastapiListing(ListingBase):
     extend this class outside.
     """
 
-    def __init__(self, request: Request = None, dao: GenericDao = None, pydantic_serializer: Optional[Type[BaseModel]] = None,
+    def __init__(self, request: Request = None, dao: GenericDao = None,
+                 pydantic_serializer: Optional[Type[BaseModel]] = None,
                  fields_to_fetch: List[str] = None,
                  *, custom_fields: Optional[bool] = False) -> None:
         self.request = request
@@ -59,9 +57,9 @@ class FastapiListing(ListingBase):
 
     def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         try:
-            sorting_params: List[dict] = utils.dictify_query_params(self.request.query_params.get("sort"))
-        except JSONDecodeError:
-            raise FastapiListingRequestSemanticApiException(status_code=422, detail="sorter param is not a valid json!")
+            sorting_params: List[dict] = listing_meta_info.feature_params_adapter.get("sort")
+        except Exception:
+            raise FastapiListingRequestSemanticApiException(status_code=422, detail="Crap! Sorting went wrong.")
         temp = set(item.get("field") for item in sorting_params) - set(
             listing_meta_info.sorting_column_mapper.keys())
         if temp:
@@ -83,18 +81,11 @@ class FastapiListing(ListingBase):
         return query
 
     def _apply_filters(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
-        """
-        filter key
-        filter value
-        :param query:
-        :param listing_meta_info:
-        :return:
-        """
         try:
-            fltrs: List[dict] = utils.dictify_query_params(self.request.query_params.get("filter"))
-        except JSONDecodeError:
+            fltrs: List[dict] = listing_meta_info.feature_params_adapter.get("filter")
+        except Exception:
             raise FastapiListingRequestSemanticApiException(status_code=422,
-                                                            detail=f"filter param is not a valid json!")
+                                                            detail=f"Crap! Filtering went wrong.")
         temp = set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys())
         if temp:
             raise NotRegisteredApiException(
@@ -111,9 +102,17 @@ class FastapiListing(ListingBase):
         query = launch_mechanics(query)
         return query
 
-    def _paginate(self, query: Query, paginate_strategy: AbsPaginatingStrategy,
-                  extra_context: dict) -> ListingResponseType:
-        page = paginate_strategy.paginate(query, self.request, extra_context)
+    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
+        try:
+            raw_params = listing_meta_info.feature_params_adapter.get("pagination")
+            page_params = raw_params[0] if raw_params else {"page": 0, "page_size": listing_meta_info.default_page_size}
+            paginator_params: dict = page_params
+        except Exception:
+            raise FastapiListingRequestSemanticApiException(status_code=422,
+                                                            detail="Crap! Pagination went wrong.")
+        page = listing_meta_info.paginating_strategy.paginate(query,
+                                                              pagination_params=paginator_params,
+                                                              extra_context=listing_meta_info.extra_context)
         return page
 
     def _prepare_query(self, listing_meta_info: ListingMetaInfo) -> Query:
@@ -137,6 +136,5 @@ class FastapiListing(ListingBase):
                                         custom_fields=self.custom_fields
                                         )
         fnl_query: Query = self._prepare_query(listing_meta_info)
-        response: ListingResponseType = self._paginate(fnl_query, listing_meta_info.paginating_strategy,
-                                                       listing_meta_info.extra_context)
+        response: ListingResponseType = self._paginate(fnl_query, listing_meta_info)
         return response

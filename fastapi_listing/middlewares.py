@@ -1,7 +1,7 @@
 import contextlib
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from typing import Optional, Callable
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -20,27 +20,25 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
             app: ASGIApp,
-            master: Optional[Session] = None,
-            replica: Optional[Session] = None,
+            master: Callable[[], Session] = None,
+            replica: Callable[[], Session] = None,
             session_close_implicit: bool = False
     ):
         super().__init__(app)
         self.close_implicit = session_close_implicit
-
-        global _session
-        global _replica_session
-
-        self.master_token = _session.set(master)
-        self.read_token = _replica_session.set(replica)
+        self.master = master
+        self.read = replica
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        with manager(self.read_token, self.master_token, self.close_implicit):
+
+        async with manager(self.read(), self.master(), self.close_implicit):
             response = await call_next(request)
         return response
 
 
 class SessionProvider:
 
+    @classmethod
     @property
     def read_session(cls) -> Session:
         read_replica_session = _replica_session.get()
@@ -48,6 +46,7 @@ class SessionProvider:
             raise MissingSessionError
         return read_replica_session
 
+    @classmethod
     @property
     def session(cls) -> Session:
         master_session = _session.get()
@@ -56,15 +55,19 @@ class SessionProvider:
         return master_session
 
 
-@contextmanager
-def manager(t1, t2, implic_close):
+@asynccontextmanager
+async def manager(read_ses: Session, master: Session, implicit_close):
+    global _session
+    global _replica_session
+    token_read_session: Token = _session.set(read_ses)
+    token_master_session: Token = _replica_session.set(master)
     try:
         yield
     finally:
-        if implic_close:
-            if _session:
+        if implicit_close:
+            if SessionProvider.session:
                 _session.get().close()
-            if _replica_session:
+            if SessionProvider.read_session:
                 _replica_session.get().close()
-        _session.reset(t2)
-        _replica_session.reset(t1)
+        _session.reset(token_read_session)
+        _replica_session.reset(token_master_session)

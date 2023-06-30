@@ -10,6 +10,11 @@ class DaoAbstract(metaclass=ABCMeta):
     def model(self):
         pass
 
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
     @abstractmethod
     def create(self, values: Dict[str, Union[str, int]]) -> SqlAlchemyModel:
         pass

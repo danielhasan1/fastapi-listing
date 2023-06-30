@@ -10,6 +10,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.dialects.mysql import BIT
 from typing import List, Dict
+from tests import dao_setup
 
 Base = declarative_base()
 
@@ -199,22 +200,22 @@ strategy_factory.register_strategy("fake_paginator_strategy", FakePaginationStra
 
 
 class TestListingServiceDefaultFlow(ListingService):
-    DEFAULT_SRT_ON = "id"
+    default_srt_on = "id"
     dao_kls = FakeProductDao
-    QUERY_STRATEGY = "fake_query_strategy"
-    SORTING_STRATEGY = "fake_sorting_strategy"
-    PAGINATE_STRATEGY = "fake_paginator_strategy"
+    query_strategy = "fake_query_strategy"
+    sorting_strategy = "fake_sorting_strategy"
+    paginate_strategy = "fake_paginator_strategy"
 
     def get_listing(self):
         return FastapiListing(self.request, self.dao, ProductDetail).get_response(self.MetaInfo(self))
 
 
 class TestListingServiceDefaultFlowWithCustomColumns(ListingService):
-    DEFAULT_SRT_ON = "id"
+    default_srt_on = "id"
     dao_kls = FakeProductDao
-    QUERY_STRATEGY = "fake_query_strategy"
-    SORTING_STRATEGY = "fake_sorting_strategy"
-    PAGINATE_STRATEGY = "fake_paginator_strategy"
+    query_strategy = "fake_query_strategy"
+    sorting_strategy = "fake_sorting_strategy"
+    paginate_strategy = "fake_paginator_strategy"
 
     def get_listing(self):
         return FastapiListing(self.request, self.dao, ProductDetailWithCustomFields, custom_fields=True).get_response(self.MetaInfo(self))
@@ -239,11 +240,11 @@ strategy_factory.register_strategy("fake_paginator_strategy_v2", FakePaginationS
 
 
 class TestListingServiceVariablePageFlow(ListingService):
-    DEFAULT_SRT_ON = "id"
+    default_srt_on = "id"
     dao_kls = FakeProductDao
-    QUERY_STRATEGY = "fake_query_strategy"
-    SORTING_STRATEGY = "fake_sorting_strategy"
-    PAGINATE_STRATEGY = "fake_paginator_strategy_v2"
+    query_strategy = "fake_query_strategy"
+    sorting_strategy = "fake_sorting_strategy"
+    paginate_strategy = "fake_paginator_strategy_v2"
 
     def get_listing(self):
         return FastapiListing(self.request, self.dao, ProductDetail).get_response(self.MetaInfo(self))
@@ -263,11 +264,11 @@ strategy_factory.register_strategy("fake_sorting_strategy_v2", FakeSortingStrate
 
 
 class TestListingServiceSortFlow(ListingService):
-    DEFAULT_SRT_ON = "id"
+    default_srt_on = "id"
     dao_kls = FakeProductDao
-    QUERY_STRATEGY = "fake_query_strategy"
-    SORTING_STRATEGY = "fake_sorting_strategy_v2"
-    PAGINATE_STRATEGY = "fake_paginator_strategy_v2"
+    query_strategy = "fake_query_strategy"
+    sorting_strategy = "fake_sorting_strategy_v2"
+    paginate_strategy = "fake_paginator_strategy_v2"
 
     sort_mapper = {
         "id": "Product.product_id"

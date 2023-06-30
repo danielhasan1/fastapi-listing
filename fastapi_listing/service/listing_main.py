@@ -4,6 +4,9 @@ from fastapi_listing.abstracts import ListingServiceBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.factory import strategy_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
+from fastapi_listing.dao import dao_factory
+from fastapi_listing.service.adapters import CoreListingParamsAdapter
+from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
 
 
 class ListingService(ListingServiceBase):  # noqa
@@ -11,14 +14,16 @@ class ListingService(ListingServiceBase):  # noqa
     sort_mapper: dict = {}
     # here resource creation should be based on factory and not inline as we are separating creation from usage.
     # factory should deliver sorting resource
-    # DEFAULT_SRT_ON: str = "created_at" # to be taken by user at child class level
-    default_sort_on: str = "dsc"
+    # default_srt_on: str = "created_at" # to be taken by user at child class level
+    default_srt_ord: str = "dsc"
     paginate_strategy: str = "default_paginator"
     query_strategy: str = "default_query"
     sorting_strategy: str = "default_sorter"
     sort_mecha: str = "singleton_sorter_mechanics"
     filter_mecha: str = "iterative_filter_mechanics"
-    dao_kls: GenericDao = GenericDao
+    default_page_size: int = 10
+    default_dao: GenericDao = GenericDao
+    feature_params_adapter: ClientSiteParamAdapter = CoreListingParamsAdapter
 
     # pydantic_serializer: Type[BaseModel] = None
     # allowed_pydantic_custom_fields: bool = False
@@ -27,24 +32,10 @@ class ListingService(ListingServiceBase):  # noqa
     # flexibility for the user to be able to switch between schema Fastapilisting object
     # should get initialized at user level and not implicit.
 
-    def __init__(self, request: Request, read_db=None, write_db=None, **kwargs) -> None:
-        # self.dao = self.dao_kls(**kwargs)
-        # pop out db sessions as they are concrete property of data access layer and not service layer.
+    def __init__(self, request: Request, **kwargs) -> None:
         self.request = request
         self.extra_context = kwargs
-        # ideally dao shouldn't have anything to do with extra_context i.e., kwargs
-        # but in case someone could find any use of it we pushed prepare_dap below
-        # so user could hack prepare_dao hook to do unwanted things.
-        self._prepare_dao(read_db, write_db)
-
-    def _prepare_dao(self, read_db, write_db):
-        self.dao = self.dao_kls(read_db=read_db, write_db=write_db)
-        # once dao is prepared and linked with listing service
-        # we don't need it's dependent params anymore.
-        # to only allowing db access on a single layer i.e. dao (data access object layer)
-        # in case user has only one db for read/write
-        # they can send read_db = write_db = db
-        # both variable will still refer to same session
+        self.dao: ListingService.default_dao = dao_factory.create(self.default_dao.name)
 
     def get_listing(self):
         """
@@ -70,14 +61,11 @@ class ListingService(ListingServiceBase):  # noqa
         """
         raise NotImplementedError("method should be implemented in child class and not here!")
 
-    # def page_data_modifier(self, data: dict) -> dict:
-    #     raise NotImplementedError
-
     class MetaInfo:
 
         def __init__(self, outer_instance):
             self.paginating_strategy = strategy_factory.create(
-                outer_instance.paginate_strategy)
+                outer_instance.paginate_strategy, request=outer_instance.request)
             self.filter_column_mapper = outer_instance.filter_mapper
             self.query_strategy = strategy_factory.create(outer_instance.query_strategy)
             self.sorting_column_mapper = outer_instance.sort_mapper
@@ -91,9 +79,8 @@ class ListingService(ListingServiceBase):  # noqa
             self.sorter_mechanic = outer_instance.sort_mecha
             self.filter_mechanic = outer_instance.filter_mecha
             self.extra_context = outer_instance.extra_context
-
-    def meta_info_generator(self) -> ListingMetaInfo:
-        return ListingService.MetaInfo(self)  # type:ignore # noqa # some issue is coming in pycharm for return types
+            self.feature_params_adapter = outer_instance.feature_params_adapter(outer_instance.request)
+            self.default_page_size = outer_instance.default_page_size
 
     # @staticmethod
     # def get_sort_mecha_plugin_path() -> str:
@@ -146,3 +133,13 @@ class ListingService(ListingServiceBase):  # noqa
 
 
 # appr 1 - we could centralise the loading process but it would benefit if we could understand plugin pattern in more depth
+
+
+# from sqlalchemy import create_engine, MetaData
+# from time import sleep
+#
+#
+# engine = create_engine("mysql://root:123456@localhost:3306/employees")
+# con = engine.connect()
+#
+# print(con.execute("show tables"))
