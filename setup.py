@@ -62,6 +62,7 @@ setuptools.setup(
             "fastapi>=0.92.0",
             "mypy>=0.971",
             "pytest-mypy>=0.9.1",
+            "mysqlclient==2.2.0",
         ],
     },
 )
