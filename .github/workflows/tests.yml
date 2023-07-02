@@ -12,7 +12,7 @@ jobs:
       - name: Setup Test Db
         run: |
           docker pull danielhasan1/mysql_employees_test_db
-          docker run -it -d mysql_employees_test_db
+          docker run -it -d danielhasan1/mysql_employees_test_db
 
       - name: Checkout
         uses: actions/checkout@v2
