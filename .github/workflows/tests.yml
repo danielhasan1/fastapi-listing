@@ -13,6 +13,7 @@ jobs:
         run: |
           docker pull danielhasan1/mysql_employees_test_db
           docker run -d --name dazzling_wright danielhasan1/mysql_employees_test_db
+          sleep 20
           docker exec dazzling_wright bash setup-data
       - name: Checkout
         uses: actions/checkout@v2
