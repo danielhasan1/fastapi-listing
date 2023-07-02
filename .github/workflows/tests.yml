@@ -10,13 +10,10 @@ jobs:
         python-version: [ 3.7, 3.8, 3.9, '3.10', '3.11' ]
     steps:
       - name: Setup Test Db
-        shell: 'script -q -e -c "bash {0}"'
         run: |
           docker pull danielhasan1/mysql_employees_test_db
-          docker run -it -d --name test danielhasan1/mysql_employees_test_db bash
-          git clone https://github.com/datacharmer/test_db.git
-          cd test_db
-          mysql -u root -p123456 -t < employees.sql
+          docker run -d --name dazzling_wright danielhasan1/mysql_employees_test_db
+          docker exec dazzling_wright bash setup-data
       - name: Checkout
         uses: actions/checkout@v2
 
