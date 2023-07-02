@@ -36,9 +36,8 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
         return response
 
 
-class SessionProvider:
+class SessionProviderMeta(type):
 
-    @classmethod
     @property
     def read_session(cls) -> Session:
         read_replica_session = _replica_session.get()
@@ -46,13 +45,16 @@ class SessionProvider:
             raise MissingSessionError
         return read_replica_session
 
-    @classmethod
     @property
     def session(cls) -> Session:
         master_session = _session.get()
         if master_session is None:
             raise MissingSessionError
         return master_session
+
+
+class SessionProvider(metaclass=SessionProviderMeta):
+    pass
 
 
 @asynccontextmanager
