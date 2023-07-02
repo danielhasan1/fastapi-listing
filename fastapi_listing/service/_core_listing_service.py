@@ -6,7 +6,7 @@ from sqlalchemy.orm import Query
 from fastapi_listing.abstracts import ListingBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
-    NotRegisteredApiException, ListingPaginatorError
+    NotRegisteredApiException
 from fastapi_listing.factory import strategy_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
@@ -50,10 +50,9 @@ class FastapiListing(ListingBase):
 
     @staticmethod
     def _replace_aliases(mapper: Dict[str, str], req_params: List[Dict[str, str]]) -> List[Dict[str, str]]:
-        req_prms_cpy = req_params.copy()
-        for param in req_prms_cpy:
+        for param in req_params:
             param["field"] = mapper[param["field"]]
-        return req_prms_cpy
+        return req_params
 
     def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
         try:
@@ -105,9 +104,9 @@ class FastapiListing(ListingBase):
     def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
         try:
             raw_params = listing_meta_info.feature_params_adapter.get("pagination")
-            page_params = raw_params[0] if raw_params else {"page": 0, "page_size": listing_meta_info.default_page_size}
+            page_params = raw_params if raw_params else {"page": 1, "pageSize": listing_meta_info.default_page_size}
             paginator_params: dict = page_params
-        except Exception:
+        except Exception as e:
             raise FastapiListingRequestSemanticApiException(status_code=422,
                                                             detail="Crap! Pagination went wrong.")
         page = listing_meta_info.paginating_strategy.paginate(query,

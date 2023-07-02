@@ -1,12 +1,15 @@
+from typing import NamedTuple, Callable, Optional
+
 from fastapi import Request
 
 from fastapi_listing.abstracts import ListingServiceBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.factory import strategy_factory
-from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.dao import dao_factory
 from fastapi_listing.service.adapters import CoreListingParamsAdapter
 from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
+
+
 
 
 class ListingService(ListingServiceBase):  # noqa
@@ -82,6 +85,8 @@ class ListingService(ListingServiceBase):  # noqa
             self.feature_params_adapter = outer_instance.feature_params_adapter(outer_instance.request)
             self.default_page_size = outer_instance.default_page_size
 
+
+
     # @staticmethod
     # def get_sort_mecha_plugin_path() -> str:
     #     """
@@ -134,12 +139,3 @@ class ListingService(ListingServiceBase):  # noqa
 
 # appr 1 - we could centralise the loading process but it would benefit if we could understand plugin pattern in more depth
 
-
-# from sqlalchemy import create_engine, MetaData
-# from time import sleep
-#
-#
-# engine = create_engine("mysql://root:123456@localhost:3306/employees")
-# con = engine.connect()
-#
-# print(con.execute("show tables"))

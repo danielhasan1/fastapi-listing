@@ -1,3 +1,4 @@
+run-name: ${{ github.actor }}
 on: [ push, pull_request ]
 
 jobs:
@@ -6,8 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.7, 3.8, 3.9, '3.10', '3.11' ]
+        python-version: [ 3.7, 3.8, 3.9, 3.10, 3.11 ]
     steps:
+      - name: Setup Test Db
+        script: |
+          docker pull danielhasan1/mysql_employees_test_db
+          docker run -it -d mysql_employees_test_db
+
       - name: Checkout
         uses: actions/checkout@v2
 

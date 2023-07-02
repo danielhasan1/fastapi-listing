@@ -5,7 +5,7 @@ from fastapi_listing.ctyping import SqlAlchemyModel, FastapiRequest, SqlAlchemyQ
 
 class SortingOrderStrategy(AbsSortingStrategy):
 
-    NAME = "default_sorter"
+    name = "default_sorter"
 
     def __init__(self, model: SqlAlchemyModel = None, request: FastapiRequest = None):
         self.model = model

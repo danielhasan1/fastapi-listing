@@ -18,11 +18,11 @@ except ImportError:
 
 
 class ListingResponseType(TypedDict):
-    data: List[Dict[str, Union[int, str, list, dict]]]
-    currentPageNumber: int
-    currentPageSize: int
-    totalCount: int
     hasNext: bool
+    totalCount: int
+    currentPageSize: int
+    currentPageNumber: int
+    data: List[Dict[str, Union[int, str, list, dict]]]
 
 
 SqlAlchemyQuery = TypeVar("SqlAlchemyQuery", bound=Query)
@@ -30,4 +30,5 @@ SqlAlchemySession = TypeVar("SqlAlchemySession", bound=Session)
 FastapiRequest = TypeVar("FastapiRequest", bound=Request)
 AnySqlAlchemyColumn = TypeVar("AnySqlAlchemyColumn", bound=Column)
 SqlAlchemyModel = TypeVar("SqlAlchemyModel", bound=DeclarativeMeta)
+
 

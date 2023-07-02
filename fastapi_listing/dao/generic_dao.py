@@ -85,5 +85,5 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
     def delete(self, ids: List[int]) -> bool:
         raise NotImplementedError
 
-    def get_naive_read(self, fields_to_read: list):
+    def get_default_read(self, fields_to_read: list):
         return self._read_db.query(*fields_to_read)

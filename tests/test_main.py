@@ -103,7 +103,7 @@ client = TestClient(app)
 def test_strategy_factory_unique_strategy_register():
     with pytest.raises(ValueError) as e:
         spawn_valueerror_for_strategy_registry("same_strategy_key", "same_strategy_key")
-    assert e.value.args[0] == "strategy name already in use with FakePaginationStrategyV2!"
+    assert e.value.args[0] == "strategy name: same_strategy_key, already in use with FakePaginationStrategyV2!"
 
 
 def test_filter_factory_unique_strategy_register():

@@ -38,58 +38,63 @@ class ListingServiceBase(ABC):
     @property
     @abstractmethod
     def filter_mapper(self) -> dict:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def sort_mapper(self) -> dict:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def default_srt_on(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def default_srt_ord(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def paginate_strategy(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def query_strategy(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def sorting_strategy(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def sort_mecha(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def filter_mecha(self) -> str:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def default_dao(self) -> GenericDao:  # type:ignore # noqa
-        ...
+        pass
 
     @property
     @abstractmethod
     def feature_params_adapter(self) -> ClientSiteParamAdapter:
-        ...
+        pass
 
     @abstractmethod
     def get_listing(self):
-        ...
+        pass
+
+    @classmethod
+    def _register_filter_implicitly(cls):
+        pass
+

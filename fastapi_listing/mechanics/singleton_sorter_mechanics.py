@@ -4,8 +4,6 @@ from fastapi_listing.abstracts import SorterMechanicsAbstracts
 from fastapi_listing.sorter import SortingOrderStrategy
 from fastapi_listing.ctyping import SqlAlchemyQuery
 
-NAME = "singleton_sorter_mechanics"
-
 
 class SingletonSorterMechanics(SorterMechanicsAbstracts):
     """
@@ -19,6 +17,9 @@ class SingletonSorterMechanics(SorterMechanicsAbstracts):
         # decide how they really want to apply sorting params maybe all maybe none or maybe
         # conditional sorting where if one param is applied then don't apply another specific one, etc.
     """
+
+    name = "singleton_sorter_mechanics"
+
 
     def apply(self, *, query: SqlAlchemyQuery = None, strategy: SortingOrderStrategy = None,
               sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:

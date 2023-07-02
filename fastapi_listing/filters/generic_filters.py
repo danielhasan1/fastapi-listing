@@ -7,13 +7,19 @@ from fastapi_listing.ctyping import SqlAlchemyQuery, AnySqlAlchemyColumn
 
 class CommonFilterImpl(FilterAbstract):
 
-    def __init__(self, dao=None, request=None, extra_context=None, field_extract_fn: Callable[[str], str] = None):
+    def __init__(self, dao=None, request=None, extra_context=None,
+                 field_extract_fn: Callable[[str], AnySqlAlchemyColumn] = None):
+        # lambda x: getattr(Model, x)
         self.dao = dao
         self.request = request
         self.extra_context = extra_context
+        self.custom_field_extractor = field_extract_fn
 
     def extract_field(self, field: str) -> AnySqlAlchemyColumn:
-        return getattr(self.dao.model, field.split(".")[-1])
+        field = field.split(".")[-1]
+        if self.custom_field_extractor:
+            return self.custom_field_extractor(field)
+        return getattr(self.dao.model, field)
 
     def filter(self, *, field: str = None, value: dict = None, query=None) -> SqlAlchemyQuery:
         raise NotImplementedError("To be implemented in child class!")
@@ -152,4 +158,13 @@ class HasFieldValue(CommonFilterImpl):
             query = query.filter(inst_field.is_not(None))
         else:
             query = query.filter(inst_field.is_(None))
+        return query
+
+
+class MySqlNativeDateFormateRangeFilter(CommonFilterImpl):
+
+    def filter(self, *, field: str = None, value: dict = None, query=None) -> SqlAlchemyQuery:
+        inst_field = self.extract_field(field)
+        if value:
+            query = query.filter(inst_field.between(value.get("start"), value.get("end")))
         return query

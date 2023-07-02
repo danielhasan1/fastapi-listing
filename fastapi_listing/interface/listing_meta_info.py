@@ -57,11 +57,11 @@ class ListingMetaInfo(Protocol):
         ...
 
     @property
-    def feature_params_adapter(self) -> ClientSiteParamAdapter: # noqa
+    def feature_params_adapter(self) -> ClientSiteParamAdapter:  # noqa
         ...
 
     @property
-    def default_page_size(self) -> int: # noqa
+    def default_page_size(self) -> int:  # noqa
         ...
 
     # where should a protocol file live
