@@ -10,6 +10,7 @@ jobs:
         python-version: [ 3.7, 3.8, 3.9, '3.10', '3.11' ]
     steps:
       - name: Setup Test Db
+        shell: 'script -q -e -c "bash {0}"'
         run: |
           docker pull danielhasan1/mysql_employees_test_db
           docker run -it --name test danielhasan1/mysql_employees_test_db bash
