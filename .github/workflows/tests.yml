@@ -12,7 +12,7 @@ jobs:
       - name: Setup Test Db
         run: |
           docker pull danielhasan1/mysql_employees_test_db
-          docker run -d --name dazzling_wright danielhasan1/mysql_employees_test_db
+          docker run -d -p 3306:3306 --name dazzling_wright danielhasan1/mysql_employees_test_db
           sleep 20
           docker exec dazzling_wright bash setup-data
       - name: Checkout
