@@ -38,7 +38,7 @@ def get_db() -> Session:
     for the sake of simplicity and testing purpose I'm replicating this behaviour in this naive way.
     :return: Session
     """
-    engine = create_engine("mysql://root:123456@localhost:3306/employees", pool_pre_ping=1)
+    engine = create_engine("mysql://root:123456@localhost:3307/employees", pool_pre_ping=1)
     sess = Session(bind=engine)
     return sess
 
