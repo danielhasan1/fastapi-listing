@@ -38,7 +38,7 @@ def get_db() -> Session:
     for the sake of simplicity and testing purpose I'm replicating this behaviour in this naive way.
     :return: Session
     """
-    engine = create_engine("mysql://root:123456@127.0.0.1:3307/employees", pool_pre_ping=1)
+    engine = create_engine("mysql://root:123456@127.0.0.1:3306/employees", pool_pre_ping=1)
     sess = Session(bind=engine)
     return sess
 
@@ -123,4 +123,20 @@ def test_custom_serializer_field():
                           )
     assert response.status_code == 200
     assert response.json() == original_responses.test_employee_listing_with_custom_field
+
+import logging
+
+logger = logging.getLogger()
+fhandler = logging.FileHandler(filename=r"C:\Users\danis\dev\test.log", mode='a')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fhandler.setFormatter(formatter)
+logger.addHandler(fhandler)
+logger.setLevel(logging.DEBUG)
+def test_sorting_on_default_listing():
+    response = client.get("/v1/employees", params={
+        "sort": get_url_quoted_string([{"field":"cd", "type":"asc"}])
+    })
+    logger.info(f"{response.json()}")
+    assert response.status_code == 200
+    assert response.json() == original_responses.test_default_employee_listing_asc_sorted
 

@@ -26,17 +26,18 @@ class EmployeeListingService(ListingService):
         "fnm": "Employee.first_name",
         "lnm": "Employee.last_name"
     }
+    sort_mapper = {
+        "cd": "emp_no"
+    }
     default_srt_on = "emp_no"
     default_dao = EmployeeDao
 
     def get_listing(self):
+        resp = {}
         if self.extra_context.get("q") == "vanilla":
             resp = FastapiListing(self.request, self.dao, EmployeeListDetails).get_response(self.MetaInfo(self))
         elif self.extra_context.get("q") == "custom_fields":
             resp = FastapiListing(self.request, self.dao, EmployeeListDetailWithCustomFields,
                                   custom_fields=True).get_response(
                 self.MetaInfo(self))
-        else:
-            resp = {}
-
         return resp

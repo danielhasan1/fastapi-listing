@@ -2,38 +2,35 @@ from fastapi import Request
 from fastapi import FastAPI
 import pytest
 from fastapi.testclient import TestClient
-from .fake_listing_setup import ProductPage, TestListingServiceDefaultFlow, fake_db_response, \
-    fake_db_response_page_size_1, TestListingServiceVariablePageFlow, TestListingServiceSortFlow, \
-    spawn_valueerror_for_strategy_registry, spawn_valueerror_for_filter_factory, invalid_type_factory_keys, \
-    ProductPageWithCustomColumns, TestListingServiceDefaultFlowWithCustomColumns, fake_db_response_with_custom_column
+from .fake_listing_setup import  \
+    spawn_valueerror_for_strategy_registry, spawn_valueerror_for_filter_factory, invalid_type_factory_keys
 
 app = FastAPI()
 
-
-@app.get("/", response_model=ProductPage)
-def read_main(request: Request):
-    resp = TestListingServiceDefaultFlow(request, read_db="read_db_session", write_db="write_db_session").get_listing()
-    return resp
-
-
-@app.get("/custom-columns", response_model=ProductPageWithCustomColumns)
-def read_main_with_custom_fields(request: Request):
-    resp = TestListingServiceDefaultFlowWithCustomColumns(request, read_db="read_db_session",
-                                                          write_db="write_db_session").get_listing()
-    return resp
-
-
-@app.get("/var-page", response_model=ProductPage)
-def read_limit_1_page(request: Request):
-    resp = TestListingServiceVariablePageFlow(request, read_db="read_db_session",
-                                              write_db="write_db_session").get_listing()
-    return resp
-
-
-@app.get("/sort", response_model=ProductPage)
-def sort_test(reqeust: Request):
-    resp = TestListingServiceSortFlow(reqeust).get_listing()
-    return resp
+# @app.get("/", response_model=ProductPage)
+# def read_main(request: Request):
+#     resp = TestListingServiceDefaultFlow(request, read_db="read_db_session", write_db="write_db_session").get_listing()
+#     return resp
+#
+#
+# @app.get("/custom-columns", response_model=ProductPageWithCustomColumns)
+# def read_main_with_custom_fields(request: Request):
+#     resp = TestListingServiceDefaultFlowWithCustomColumns(request, read_db="read_db_session",
+#                                                           write_db="write_db_session").get_listing()
+#     return resp
+#
+#
+# @app.get("/var-page", response_model=ProductPage)
+# def read_limit_1_page(request: Request):
+#     resp = TestListingServiceVariablePageFlow(request, read_db="read_db_session",
+#                                               write_db="write_db_session").get_listing()
+#     return resp
+#
+#
+# @app.get("/sort", response_model=ProductPage)
+# def sort_test(reqeust: Request):
+#     resp = TestListingServiceSortFlow(reqeust).get_listing()
+#     return resp
 
 
 client = TestClient(app)

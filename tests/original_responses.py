@@ -35,3 +35,20 @@ test_default_employee_listing_last_name_filter = {'data': [
 test_employee_listing_with_custom_field = {'data': [
     {'empid': 499999, 'bdt': '1958-05-01', 'gdr': 'M', 'hdt': '1997-11-30',
      'flnm': 'Sachin Tsukuda'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 185}
+
+test_default_employee_listing_asc_sorted = {
+    'data': [{'empid': 10001, 'bdt': '1953-09-02', 'fnm': 'Georgi', 'lnm': 'Facello', 'gdr': 'M', 'hdt': '1986-06-26'},
+             {'empid': 10002, 'bdt': '1964-06-02', 'fnm': 'Bezalel', 'lnm': 'Simmel', 'gdr': 'F', 'hdt': '1985-11-21'},
+             {'empid': 10003, 'bdt': '1959-12-03', 'fnm': 'Parto', 'lnm': 'Bamford', 'gdr': 'M', 'hdt': '1986-08-28'},
+             {'empid': 10004, 'bdt': '1954-05-01', 'fnm': 'Chirstian', 'lnm': 'Koblick', 'gdr': 'M',
+              'hdt': '1986-12-01'},
+             {'empid': 10005, 'bdt': '1955-01-21', 'fnm': 'Kyoichi', 'lnm': 'Maliniak', 'gdr': 'M',
+              'hdt': '1989-09-12'},
+             {'empid': 10006, 'bdt': '1953-04-20', 'fnm': 'Anneke', 'lnm': 'Preusig', 'gdr': 'F', 'hdt': '1989-06-02'},
+             {'empid': 10007, 'bdt': '1957-05-23', 'fnm': 'Tzvetan', 'lnm': 'Zielinski', 'gdr': 'F',
+              'hdt': '1989-02-10'},
+             {'empid': 10008, 'bdt': '1958-02-19', 'fnm': 'Saniya', 'lnm': 'Kalloufi', 'gdr': 'M', 'hdt': '1994-09-15'},
+             {'empid': 10009, 'bdt': '1952-04-19', 'fnm': 'Sumant', 'lnm': 'Peac', 'gdr': 'F', 'hdt': '1985-02-18'},
+             {'empid': 10010, 'bdt': '1963-06-01', 'fnm': 'Duangkaew', 'lnm': 'Piveteau', 'gdr': 'F',
+              'hdt': '1989-08-24'}], 'currentPageSize': 10, 'currentPageNumber': 1, 'hasNext': True,
+    'totalCount': 300024}
