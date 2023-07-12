@@ -21,10 +21,16 @@ class EmployeeListingService(ListingService):
     custom_fields,
     """
     filter_mapper = {
+        "gdr": ("Employee.gender", generic_filters.EqualityFilter),
+        "bdt": ("Employee.birth_date", generic_filters.MySqlNativeDateFormateRangeFilter),
+        "fnm": ("Employee.first_name", generic_filters.StringStartsWithFilter),
+        "lnm": ("Employee.last_name", generic_filters.StringEndsWithFilter)
+    }
+    filter_mapper = {
         "gdr": "Employee.gender",
         "bdt": "Employee.birth_date",
         "fnm": "Employee.first_name",
-        "lnm": "Employee.last_name"
+        "lnm": "Employee.last_name",
     }
     sort_mapper = {
         "cd": "emp_no"
@@ -41,3 +47,7 @@ class EmployeeListingService(ListingService):
                                   custom_fields=True).get_response(
                 self.MetaInfo(self))
         return resp
+
+
+# filter_factory.register_filters(EmployeeListingService.filter_mapper)
+# class AdvancedEmployeeListingService(ListingService):

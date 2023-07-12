@@ -136,7 +136,6 @@ def test_sorting_on_default_listing():
     response = client.get("/v1/employees", params={
         "sort": get_url_quoted_string([{"field":"cd", "type":"asc"}])
     })
-    logger.info(f"{response.json()}")
     assert response.status_code == 200
     assert response.json() == original_responses.test_default_employee_listing_asc_sorted
 

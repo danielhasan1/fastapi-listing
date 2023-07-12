@@ -51,7 +51,10 @@ class FastapiListing(ListingBase):
     @staticmethod
     def _replace_aliases(mapper: Dict[str, str], req_params: List[Dict[str, str]]) -> List[Dict[str, str]]:
         for param in req_params:
-            param["field"] = mapper[param["field"]]
+            if type(mapper[param["field"]]) is tuple:
+                param["field"] = mapper[param["field"]][0]
+            else:
+                param["field"] = mapper[param["field"]]
         return req_params
 
     def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:

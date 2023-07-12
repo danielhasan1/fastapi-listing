@@ -7,7 +7,7 @@ from fastapi_listing.ctyping import SqlAlchemyQuery, AnySqlAlchemyColumn
 
 class CommonFilterImpl(FilterAbstract):
 
-    def __init__(self, dao=None, request=None, extra_context=None,
+    def __init__(self, dao=None, request=None, *, extra_context=None,
                  field_extract_fn: Callable[[str], AnySqlAlchemyColumn] = None):
         # lambda x: getattr(Model, x)
         self.dao = dao
