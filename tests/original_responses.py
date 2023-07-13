@@ -52,3 +52,11 @@ test_default_employee_listing_asc_sorted = {
              {'empid': 10010, 'bdt': '1963-06-01', 'fnm': 'Duangkaew', 'lnm': 'Piveteau', 'gdr': 'F',
               'hdt': '1989-08-24'}], 'currentPageSize': 10, 'currentPageNumber': 1, 'hasNext': True,
     'totalCount': 300024}
+
+test_dept_emp_mapping_page_resp = {'data': [
+    {'fnm': 'Sachin', 'lnm': 'Tsukuda', 'dpnm': 'Production', 'frmdt': '1997-11-30', 'tdt': '9999-01-01',
+     'hrdt': '1997-11-30'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 331603}
+
+test_dept_emp_mapping_full_name_filter_resp = {'data': [
+    {'fnm': 'Sumant', 'lnm': 'Prochazka', 'dpnm': 'Sales', 'frmdt': '1999-05-16', 'tdt': '2000-01-24',
+     'hrdt': '1986-10-05'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 14}

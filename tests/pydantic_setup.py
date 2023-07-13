@@ -42,3 +42,23 @@ class EmployeeListingResponse(BaseModel):
 class EmployeeListingResponseWithCustomFields(EmployeeListingResponse):
     data: List[EmployeeListDetailWithCustomFields] = []
 
+
+class DepartMentEmployeeListingDetails(BaseModel):
+    first_name: str = Field(alias="fnm")
+    last_name: str = Field(alias="lnm")
+    dept_name: str = Field(alias="dpnm")
+    from_date: date = Field(alias="frmdt")
+    to_date: date = Field(alias="tdt")
+    hire_date: date = Field(alias="hrdt")
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+
+class DepartMentEmployeeListingResp(BaseModel):
+    data: List[DepartMentEmployeeListingDetails] = []
+    currentPageSize: int
+    currentPageNumber: int
+    hasNext: bool
+    totalCount: int

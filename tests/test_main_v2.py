@@ -13,11 +13,13 @@ from .dao_setup import register
 
 from .service_setup import (
     EmployeeListingService,
+    DepartmentEmployeesListingService
 )
 
 from .pydantic_setup import (
     EmployeeListingResponse,
-    EmployeeListingResponseWithCustomFields
+    EmployeeListingResponseWithCustomFields,
+    DepartMentEmployeeListingResp
 )
 
 from . import original_responses
@@ -38,7 +40,7 @@ def get_db() -> Session:
     for the sake of simplicity and testing purpose I'm replicating this behaviour in this naive way.
     :return: Session
     """
-    engine = create_engine("mysql://root:123456@127.0.0.1:3306/employees", pool_pre_ping=1)
+    engine = create_engine("mysql://root:123456@127.0.0.1:3307/employees", pool_pre_ping=1)
     sess = Session(bind=engine)
     return sess
 
@@ -66,6 +68,12 @@ def read_main(request: Request, q: str = Query("vanilla", alias="q")):
 def read_main_with_custom_field(request: Request, q: str = Query("custom-fields", alias="q")):
     resp = EmployeeListingService(request,
                                   q=q).get_listing()
+    return resp
+
+
+@app.get("/v1/dep-emp", response_model=DepartMentEmployeeListingResp)
+def read_dep_emp_mapping(request: Request):
+    resp = DepartmentEmployeesListingService(request).get_listing()
     return resp
 
 
@@ -124,6 +132,14 @@ def test_custom_serializer_field():
     assert response.status_code == 200
     assert response.json() == original_responses.test_employee_listing_with_custom_field
 
+
+def test_sorting_on_default_listing():
+    response = client.get("/v1/employees", params={
+        "sort": get_url_quoted_string([{"field": "cd", "type": "asc"}])
+    })
+    assert response.status_code == 200
+    assert response.json() == original_responses.test_default_employee_listing_asc_sorted
+
 import logging
 
 logger = logging.getLogger()
@@ -132,10 +148,21 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 fhandler.setFormatter(formatter)
 logger.addHandler(fhandler)
 logger.setLevel(logging.DEBUG)
-def test_sorting_on_default_listing():
-    response = client.get("/v1/employees", params={
-        "sort": get_url_quoted_string([{"field":"cd", "type":"asc"}])
+
+
+def test_dept_emp_mapping_listing():
+    response = client.get("/v1/dep-emp", params={
+        "pagination": get_url_quoted_string({"pageSize": 1, "page": 1})
+    })
+    logger.info(response.json())
+    assert response.status_code == 200
+    assert response.json() == original_responses.test_dept_emp_mapping_page_resp
+
+
+def test_dept_emp_mapping_listing_with_filters():
+    response = client.get("/v1/dep-emp", params={
+        "filter": get_url_quoted_string([{"field": "flnm", "value": {"search": "Sumant P"}}]),
+        "pagination": get_url_quoted_string({"pageSize": 1, "page": 1})
     })
     assert response.status_code == 200
-    assert response.json() == original_responses.test_default_employee_listing_asc_sorted
-
+    assert response.json() == original_responses.test_dept_emp_mapping_full_name_filter_resp

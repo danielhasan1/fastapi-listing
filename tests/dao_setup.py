@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List, Dict, Union
 
 from sqlalchemy import CHAR, Column, Date, Enum, ForeignKey, Integer, String, Table
@@ -7,11 +9,9 @@ from sqlalchemy.orm import declarative_base
 from fastapi_listing.ctyping import SqlAlchemyModel
 from fastapi_listing.dao import dao_factory, GenericDao
 
-
 # ------------------------------------------MODEL LAYER----------------------------------------------------------------
 Base = declarative_base()
 metadata = Base.metadata
-
 
 t_current_dept_emp = Table(
     'current_dept_emp', metadata,
@@ -52,7 +52,8 @@ class DeptEmp(Base):
     __tablename__ = 'dept_emp'
 
     emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
-    dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)
+    dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
+                     index=True)
     from_date = Column(Date, nullable=False)
     to_date = Column(Date, nullable=False)
 
@@ -64,7 +65,8 @@ class DeptManager(Base):
     __tablename__ = 'dept_manager'
 
     emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
-    dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)
+    dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
+                     index=True)
     from_date = Column(Date, nullable=False)
     to_date = Column(Date, nullable=False)
 
@@ -131,10 +133,23 @@ class EmployeeDao(ClassicDao):
     name = "employee"
     model = Employee
 
+    def get_emp_ids_contain_full_name(self, full_name: str) -> list[int]:
+        from sqlalchemy import func
+        objs = self._read_db.query(Employee.emp_no).filter(func.concat(Employee.first_name, ' ', Employee.last_name
+                                                                       ).contains(full_name)).all()
+        return [obj.emp_no for obj in objs]
+
 
 class DeptEmpDao(ClassicDao):
     name = "deptemp"
     model = DeptEmp
+
+    def get_emp_dept_mapping_base_query(self):
+        query = self._read_db.query(DeptEmp.from_date, DeptEmp.to_date, Department.dept_name, Employee.first_name,
+                                    Employee.last_name, Employee.hire_date
+                                    ).join(Employee, DeptEmp.emp_no == Employee.emp_no
+                                           ).join(Department, DeptEmp.dept_no == Department.dept_no)
+        return query
 
 
 class DepartmentDao(ClassicDao):
@@ -147,5 +162,5 @@ def register():
     dao_factory.register_dao(DepartmentDao.name, DepartmentDao)
     dao_factory.register_dao(DeptEmpDao.name, DeptEmpDao)
     dao_factory.register_dao(EmployeeDao.name, EmployeeDao)
-    dao_factory.register_dao(DeptManagerDao.name,  DeptManagerDao)
+    dao_factory.register_dao(DeptManagerDao.name, DeptManagerDao)
     dao_factory.register_dao(SalaryDao.name, SalaryDao)

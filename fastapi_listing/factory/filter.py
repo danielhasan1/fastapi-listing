@@ -34,14 +34,13 @@ class FilterObjectFactory:
             raise ValueError(f"positional arg error, expects a callable but received: {mapper_val[2]}!")
         return True
 
-    def register_filters(self, filter_mapper: Dict[str, Tuple[str, CommonFilterImpl,
+    def register_filter_mapper(self, filter_mapper: Dict[str, Tuple[str, CommonFilterImpl,
                                                               Optional[Callable[[str], AnySqlAlchemyColumn]]]]):
         for key, val in filter_mapper.items():
             if self.is_mapper_semantic_valid(val):
                 self.register_filter(val[0], *val[1:])
 
     def create(self, key: str, **kwargs):
-        print(self._filters.get(key), key)
         try:
             filter_, field_extractor_fn = self._filters[key]
         except KeyError:

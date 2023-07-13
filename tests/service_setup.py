@@ -1,15 +1,12 @@
 from fastapi_listing import ListingService, FastapiListing
 from fastapi_listing.filters import generic_filters
-from fastapi_listing.factory import filter_factory
+from fastapi_listing.factory import filter_factory, strategy_factory
+from fastapi_listing.strategies import QueryStrategy
+from fastapi_listing.ctyping import FastapiRequest, SqlAlchemyQuery
+from fastapi_listing.dao import dao_factory
 
 from .pydantic_setup import EmployeeListDetails, EmployeeListDetailWithCustomFields
-from .dao_setup import EmployeeDao
-
-
-filter_factory.register_filter("Employee.gender", generic_filters.EqualityFilter)
-filter_factory.register_filter("Employee.birth_date", generic_filters.MySqlNativeDateFormateRangeFilter)
-filter_factory.register_filter("Employee.first_name", generic_filters.StringStartsWithFilter)
-filter_factory.register_filter("Employee.last_name", generic_filters.StringEndsWithFilter)
+from .dao_setup import EmployeeDao, DeptEmpDao
 
 
 class EmployeeListingService(ListingService):
@@ -26,12 +23,7 @@ class EmployeeListingService(ListingService):
         "fnm": ("Employee.first_name", generic_filters.StringStartsWithFilter),
         "lnm": ("Employee.last_name", generic_filters.StringEndsWithFilter)
     }
-    filter_mapper = {
-        "gdr": "Employee.gender",
-        "bdt": "Employee.birth_date",
-        "fnm": "Employee.first_name",
-        "lnm": "Employee.last_name",
-    }
+
     sort_mapper = {
         "cd": "emp_no"
     }
@@ -49,5 +41,42 @@ class EmployeeListingService(ListingService):
         return resp
 
 
-# filter_factory.register_filters(EmployeeListingService.filter_mapper)
-# class AdvancedEmployeeListingService(ListingService):
+filter_factory.register_filter_mapper(EmployeeListingService.filter_mapper)
+
+
+class FullNameFilter(generic_filters.CommonFilterImpl):
+
+    def filter(self, *, field: str = None, value: dict = None, query=None) -> SqlAlchemyQuery:
+        # field is not necessary here as this is a custom filter and user have full control over its implementation
+        if value:
+            emp_dao: EmployeeDao = dao_factory.create("employee", replica=True)
+            emp_ids: list[int] = emp_dao.get_emp_ids_contain_full_name(value.get("search"))
+            query = query.filter(self.dao.model.emp_no.in_(emp_ids))  # noqa
+        return query
+
+
+class DepartmentEmployeesListingService(ListingService):
+
+    default_srt_on = "emp_no"
+    default_dao = DeptEmpDao
+    query_strategy = "dept_emp_mapping_query"
+    filter_mapper = {
+        "flnm": ("DeptEmp.Employee.full_name", FullNameFilter)
+    }
+
+    def get_listing(self):
+        resp = FastapiListing(self.request, self.dao).get_response(self.MetaInfo(self))
+        return resp
+
+
+filter_factory.register_filter_mapper(DepartmentEmployeesListingService.filter_mapper)
+
+
+class DepartmentEmployeesQueryStrategy(QueryStrategy):
+
+    def get_query(self, *, request: FastapiRequest = None, dao: DeptEmpDao = None,
+                  extra_context: dict = None) -> SqlAlchemyQuery:
+        return dao.get_emp_dept_mapping_base_query()
+
+
+strategy_factory.register_strategy("dept_emp_mapping_query", DepartmentEmployeesQueryStrategy)
