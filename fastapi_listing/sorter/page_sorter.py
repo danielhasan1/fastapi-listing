@@ -1,6 +1,7 @@
-from typing import Dict
+from typing import Dict, Callable
 from fastapi_listing.abstracts import AbsSortingStrategy
 from fastapi_listing.ctyping import SqlAlchemyModel, FastapiRequest, SqlAlchemyQuery, AnySqlAlchemyColumn
+from fastapi_listing.factory import _generic_factory
 
 
 class SortingOrderStrategy(AbsSortingStrategy):
@@ -33,13 +34,16 @@ class SortingOrderStrategy(AbsSortingStrategy):
             query = self.sort_dsc_util(query, inst_field)
         return query
 
-    @staticmethod
-    def validate_srt_field(model: SqlAlchemyModel, sort_field: str):
-        try:
-            inst_field = getattr(model, sort_field)
-        except AttributeError:
-            inst_field = None
-        if inst_field is None:
-            raise ValueError(
-                f"Provided sort field is not an attribute of {model}")  # todo improve this by custom exception
+    def validate_srt_field(self, model: SqlAlchemyModel, sort_field: str):
+        if sort_field in _generic_factory.object_creation_collector:
+            inst_field = _generic_factory.create(sort_field)
+        else:
+            sort_field = sort_field.split(".")[-1]
+            try:
+                inst_field = getattr(model, sort_field)
+            except AttributeError:
+                inst_field = None
+            if inst_field is None:
+                raise ValueError(
+                    f"Provided sort field is not an attribute of {model}")  # todo improve this by custom exception
         return inst_field

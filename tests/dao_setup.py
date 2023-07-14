@@ -139,6 +139,11 @@ class EmployeeDao(ClassicDao):
                                                                        ).contains(full_name)).all()
         return [obj.emp_no for obj in objs]
 
+    def get_employees_with_designations(self):
+        query = self._read_db.query(Employee.emp_no, Employee.first_name, Employee.last_name, Employee.gender,
+                                    Title.title).join(Title, Employee.emp_no == Title.emp_no)
+        return query
+
 
 class DeptEmpDao(ClassicDao):
     name = "deptemp"

@@ -60,3 +60,50 @@ test_dept_emp_mapping_page_resp = {'data': [
 test_dept_emp_mapping_full_name_filter_resp = {'data': [
     {'fnm': 'Sumant', 'lnm': 'Prochazka', 'dpnm': 'Sales', 'frmdt': '1999-05-16', 'tdt': '2000-01-24',
      'hrdt': '1986-10-05'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 14}
+
+test_custom_field_extractor = {'data': [
+    {'fnm': 'Sachin', 'lnm': 'Tsukuda', 'dpnm': 'Production', 'frmdt': '1997-11-30', 'tdt': '9999-01-01',
+     'hrdt': '1997-11-30'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 198850}
+
+test_string_contains_filter = {'data': [
+    {'fnm': 'Bangqing', 'lnm': 'Kleiser', 'dpnm': 'Sales', 'frmdt': '1988-07-25', 'tdt': '2001-10-09',
+     'hrdt': '1986-06-06'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 52245}
+
+test_string_like_filter = {
+    'data': [{'empid': 499999, 'fnm': 'Sachin', 'lnm': 'Tsukuda', 'gdr': 'M', 'desg': 'Engineer'}],
+    'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 115003}
+
+test_greater_than_filter = {'data': [
+    {'fnm': 'Bikash', 'lnm': 'Covnot', 'dpnm': 'Quality Management', 'frmdt': '2000-02-01', 'tdt': '2000-05-19',
+     'hrdt': '2000-01-28'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': False, 'totalCount': 1}
+
+test_less_than_filter = {'data': [
+    {'fnm': 'Aimee', 'lnm': 'Baja', 'dpnm': 'Marketing', 'frmdt': '1985-02-06', 'tdt': '1985-02-17',
+     'hrdt': '1985-02-06'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': False, 'totalCount': 1}
+
+test_greater_than_equal_to_filter = {'data': [
+    {'fnm': 'Sachin', 'lnm': 'Tsukuda', 'dpnm': 'Production', 'frmdt': '1997-11-30', 'tdt': '9999-01-01',
+     'hrdt': '1997-11-30'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 240124}
+
+test_less_than_equal_to_filter = {'data': [
+    {'fnm': 'Aimee', 'lnm': 'Baja', 'dpnm': 'Marketing', 'frmdt': '1985-02-06', 'tdt': '1985-02-17',
+     'hrdt': '1985-02-06'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': False, 'totalCount': 1}
+
+test_has_field_value_filter = {'data': [
+    {'fnm': 'Sachin', 'lnm': 'Tsukuda', 'dpnm': 'Production', 'frmdt': '1997-11-30', 'tdt': '9999-01-01',
+     'hrdt': '1997-11-30'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 331603}
+
+test_has_none_value_filter = {'data': [], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': False,
+                              'totalCount': 0}
+
+test_inequality_filter = {'data': [
+    {'fnm': 'Dekang', 'lnm': 'Lichtner', 'dpnm': 'Production', 'frmdt': '1997-06-02', 'tdt': '9999-01-01',
+     'hrdt': '1993-01-12'}], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': True, 'totalCount': 132753}
+
+test_indata_filter = {'data': [
+    {'fnm': 'Dekang', 'lnm': 'Lichtner', 'dpnm': 'Production', 'frmdt': '1997-06-02', 'tdt': '9999-01-01',
+     'hrdt': '1993-01-12'},
+    {'fnm': 'Dekang', 'lnm': 'Bage', 'dpnm': 'Production', 'frmdt': '1987-03-24', 'tdt': '9999-01-01',
+     'hrdt': '1987-03-24'}], 'currentPageSize': 10, 'currentPageNumber': 1, 'hasNext': False, 'totalCount': 2}
+
+test_unix_between_filter = {'data': [], 'currentPageSize': 1, 'currentPageNumber': 1, 'hasNext': False, 'totalCount': 0}

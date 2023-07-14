@@ -10,8 +10,6 @@ from fastapi_listing.service.adapters import CoreListingParamsAdapter
 from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
 
 
-
-
 class ListingService(ListingServiceBase):  # noqa
     filter_mapper: dict = {}
     sort_mapper: dict = {}
@@ -77,15 +75,13 @@ class ListingService(ListingServiceBase):  # noqa
             self.sorting_strategy = strategy_factory.create(
                 outer_instance.sorting_strategy,
                 model=outer_instance.dao.model,
-                request=outer_instance.request
+                request=outer_instance.request,
             )
             self.sorter_mechanic = outer_instance.sort_mecha
             self.filter_mechanic = outer_instance.filter_mecha
             self.extra_context = outer_instance.extra_context
             self.feature_params_adapter = outer_instance.feature_params_adapter(outer_instance.request)
             self.default_page_size = outer_instance.default_page_size
-
-
 
     # @staticmethod
     # def get_sort_mecha_plugin_path() -> str:
@@ -138,4 +134,3 @@ class ListingService(ListingServiceBase):  # noqa
 
 
 # appr 1 - we could centralise the loading process but it would benefit if we could understand plugin pattern in more depth
-

@@ -21,7 +21,7 @@ class FilterObjectFactory:
     def is_mapper_semantic_valid(self, mapper_val):
         if type(mapper_val) is not tuple:
             raise ValueError(f"Invalid filter mapper semantic! Expected tuple!")
-        if len(mapper_val) < 2:
+        if len(mapper_val) < 2 or len(mapper_val) > 3:
             raise ValueError(f"Invalid filter mapper semantic {mapper_val}! min tuple length should be 2.")
         if type(mapper_val[0]) is not str:
             ValueError(f"Invalid filter mapper semantic {mapper_val}! first tuple element should be field (str)")

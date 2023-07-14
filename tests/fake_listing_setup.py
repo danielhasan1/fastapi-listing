@@ -257,6 +257,4 @@ def invalid_type_factory_keys(factory, key):
         filter_factory.register_filter(key, generic_filters.EqualityFilter)
     elif factory == "strategy":
         strategy_factory.register_strategy(key, FakePaginationStrategyV2)
-    else:
-        raise ValueError("Invalid factory selection!")
 

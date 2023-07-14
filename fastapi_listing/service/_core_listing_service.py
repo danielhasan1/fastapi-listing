@@ -53,8 +53,10 @@ class FastapiListing(ListingBase):
         for param in req_params:
             if type(mapper[param["field"]]) is tuple:
                 param["field"] = mapper[param["field"]][0]
-            else:
+            elif type(mapper[param["field"]]) is str:
                 param["field"] = mapper[param["field"]]
+            else:
+                raise ValueError(f"invalid field mapper")
         return req_params
 
     def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:

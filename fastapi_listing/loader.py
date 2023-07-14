@@ -1,22 +1,12 @@
-"""A simple plugin loader."""
-import importlib
+from fastapi_listing.service import ListingService
+from fastapi_listing.factory import filter_factory, _generic_factory, strategy_factory
 
 
-class ModuleInterface:
-    """Represents a plugin interface. A plugin has a single register function."""
+def load():
+    def _decorator(cls: ListingService):
+        filter_mapper = cls.filter_mapper
+        sorter_mapper = cls.sort_mapper
+        filter_factory.register_filter_mapper(filter_mapper)
+        _generic_factory.register_sort_mapper(sorter_mapper)
+        # TODO: rest of the loader criteria coming up
 
-    @staticmethod
-    def register() -> None:
-        """Register the necessary items in the game character factory."""
-
-
-def import_module(name: str) -> ModuleInterface:
-    """Imports a module given a name."""
-    return importlib.import_module(name)  # type: ignore
-
-
-def load_plugins(plugins: list[str]) -> None:
-    """Loads the mechanics defined in the mechanics list."""
-    for plugin_file in plugins:
-        plugin = import_module(plugin_file)
-        plugin.register()

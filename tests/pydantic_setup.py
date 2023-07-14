@@ -62,3 +62,23 @@ class DepartMentEmployeeListingResp(BaseModel):
     currentPageNumber: int
     hasNext: bool
     totalCount: int
+
+
+class TitledEmployeeListingDetails(BaseModel):
+    emp_no: int = Field(alias="empid", title="Employee ID")
+    first_name: str = Field(alias="fnm", title="First Name")
+    last_name: str = Field(alias="lnm", title="Last Name")
+    gender: GenderEnum = Field(alias="gdr", title="Gender")
+    title: str = Field(alias="desg", title="designation")
+
+    class Config:
+        orm_mode = True
+        allow_population_by_field_name = True
+
+
+class TitledEmployeeListingResp(BaseModel):
+    data: List[TitledEmployeeListingDetails] = []
+    currentPageSize: int
+    currentPageNumber: int
+    hasNext: bool
+    totalCount: int

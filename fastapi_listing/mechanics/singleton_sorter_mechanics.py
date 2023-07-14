@@ -20,7 +20,6 @@ class SingletonSorterMechanics(SorterMechanicsAbstracts):
 
     name = "singleton_sorter_mechanics"
 
-
     def apply(self, *, query: SqlAlchemyQuery = None, strategy: SortingOrderStrategy = None,
               sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:
         latest = sorting_params[-1]

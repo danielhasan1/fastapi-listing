@@ -1,16 +1,34 @@
 """Factory for creating a game character."""
 
 from typing import Any, Callable, Dict
+import types
 
 object_creation_collector: Dict[str, Callable[..., Any]] = {}
 
 
 def register(key: str, creator: Callable[..., Any]) -> None:
-    print(creator)
     """Register a new game character type."""
     if key in object_creation_collector:
         raise ValueError(f"Factory can not have duplicate builder key {key} for instance {creator.__name__}")
     object_creation_collector[key] = creator
+
+
+def is_mapper_semantic_valid(mapper_val):
+    if type(mapper_val) is not tuple:
+        raise ValueError(f"Invalid filter mapper semantic! Expected tuple!")
+    if len(mapper_val) < 2 or len(mapper_val) > 2:
+        raise ValueError(f"Invalid filter mapper semantic {mapper_val}! min tuple length should be 2.")
+    if type(mapper_val[0]) is not str:
+        ValueError(f"Invalid filter mapper semantic {mapper_val}! first tuple element should be field (str)")
+    if len(mapper_val) == 3 and not isinstance(mapper_val[1], types.FunctionType):
+        raise ValueError(f"positional arg error, expects a callable but received: {mapper_val[2]}!")
+    return True
+
+
+def register_sort_mapper(mapper_val):
+    for key, val in mapper_val.items():
+        if is_mapper_semantic_valid(val):
+            register(val[0], val[1])
 
 
 def unregister(key: str) -> None:

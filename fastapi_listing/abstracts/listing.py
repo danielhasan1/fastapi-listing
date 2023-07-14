@@ -98,3 +98,19 @@ class ListingServiceBase(ABC):
     def _register_filter_implicitly(cls):
         pass
 
+    @staticmethod
+    def _allowed_strategy_types(key: str) -> bool:
+        if key not in ("paginate_strategy",
+                       "query_strategy",
+                       "sorting_strategy",
+                       "sort_mecha",
+                       "iterative_filter_mechanics"):
+            return False
+        return True
+
+    def switch(self, strategy_type: str, strategy_name: str):
+        if not self._allowed_strategy_types(strategy_type):
+            raise ValueError(f"unknown strategy type!")
+        setattr(self, strategy_type, strategy_name)
+
+
