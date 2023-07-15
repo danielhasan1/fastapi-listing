@@ -4,7 +4,7 @@ from fastapi_listing.service import ListingService, FastapiListing
 from fastapi_listing.mechanics import IterativeFilterMechanics, SingletonSorterMechanics
 
 
-__version__ = "0.0.9"
+__version__ = "0.1.0"
 
 strategy_factory.register_strategy("default_paginator", PaginationStrategy)
 strategy_factory.register_strategy("default_sorter", SortingOrderStrategy)
