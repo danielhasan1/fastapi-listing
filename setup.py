@@ -53,7 +53,7 @@ setuptools.setup(
             "pytest-env>=0.6.2",
             "flake8>=3.9.2",
             "isort>=5.10.1",
-            "pydantic>=1.5.0",
+            "pydantic==1.10.7",
             "starlette>=0.21.0",
             "sqlalchemy>=2.0.7",
             "starlite>=1.38.0",
@@ -63,6 +63,7 @@ setuptools.setup(
             "mypy>=0.971",
             "pytest-mypy>=0.9.1",
             "mysqlclient",
+            "pytest-cov==4.1.0"
         ],
     },
 )

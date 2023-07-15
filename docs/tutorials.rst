@@ -198,7 +198,7 @@ Creating your first **listing api** service that will be called from router to r
 
     class UserListingService(ListingService):
         # full attribute list given in attribute section
-        DEFAULT_SRT_ON = UserDao.model.id.name
+        default_srt_on = UserDao.model.id.name
         dao_kls = UserDao
 
         def get_listing(self):
@@ -263,9 +263,9 @@ way 1 - writing strategy at listing service level(if its easy and you know its g
 
     class UserListingService(ListingService):
         # full attribute list given in attribute section
-        DEFAULT_SRT_ON = UserDao.model.id.name
+        default_srt_on = UserDao.model.id.name
         dao_kls = UserDao
-        QUERY_STRATEGY = UserQueryStrategy.NAME # or "user_query_v1"
+        query_strategy = UserQueryStrategy.NAME # or "user_query_v1"
 
         def get_listing(self):
             resp = FastapiListing(self.request, self.dao, UserListingDetails
@@ -324,9 +324,9 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
     class UserListingService(ListingService):
         # full attribute list given in attribute section
-        DEFAULT_SRT_ON = UserDao.model.id.name
+        default_srt_on = UserDao.model.id.name
         dao_kls = UserDao
-        QUERY_STRATEGY = user_query_strategy.NAME # or "user_query_v2"
+        query_strategy = user_query_strategy.NAME # or "user_query_v2"
 
         def get_listing(self):
             resp = FastapiListing(self.request, self.dao, UserListingDetails
@@ -360,27 +360,27 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
 :ref:`alias overview`?
 
-.. py:attribute:: ListingService.DEFAULT_SRT_ORD
+.. py:attribute:: ListingService.default_srt_on
 
     defining listing data default sorting order: **asc**, **dsc**
 
-.. py:attribute:: ListingService.PAGINATE_STRATEGY
+.. py:attribute:: ListingService.paginate_strategy
 
     defining listing service pagination strategy unique name. Default ``default_paginator``
 
-.. py:attribute::  ListingService.QUERY_STRATEGY
+.. py:attribute::  ListingService.query_strategy
 
     defining listing service query strategy unique name. Default ``default_query``
 
-.. py:attribute:: ListingService.SORTING_STRATEGY
+.. py:attribute:: ListingService.query_strategy
 
     defining listing service sorting strategy unique name. Default ``default_sorter``
 
-.. py:attribute:: ListingService.SORT_MECHA
+.. py:attribute:: ListingService.query_strategy
 
     defining listing service sort process executor. Default ``singleton_sorter_mechanics``
 
-.. py:attribute:: ListingService.FILTER_MECHA
+.. py:attribute:: ListingService.query_strategy
 
     defining listing service filter process executor. Default ``iterative_filter_mechanics``
 

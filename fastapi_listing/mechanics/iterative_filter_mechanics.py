@@ -3,9 +3,7 @@ from typing import List, Dict
 from fastapi_listing.abstracts import FilterMechanicsAbstracts
 from fastapi_listing.factory import filter_factory
 from fastapi_listing.filters import CommonFilterImpl
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
-
-NAME = "iterative_filter_mechanics"
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
 class IterativeFilterMechanics(FilterMechanicsAbstracts):
@@ -23,6 +21,8 @@ class IterativeFilterMechanics(FilterMechanicsAbstracts):
     one can tackle this situation by having a mechanic which will check if specific filter is applied
     with other relative filters then don't apply other relative filters...
     """
+
+    name = "iterative_filter_mechanics"
 
     def apply(self, *, query: SqlAlchemyQuery = None, filter_params: List[Dict[str, str]], dao=None,
               request: FastapiRequest = None, extra_context: dict = None) -> SqlAlchemyQuery:

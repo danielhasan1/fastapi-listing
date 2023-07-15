@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from fastapi_listing.abstracts import DaoAbstract
-from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
+from fastapi_listing.ctyping import FastapiRequest, SqlAlchemyQuery
 
 
 class AbsQueryStrategy(ABC):

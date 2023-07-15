@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from typing import Union, Dict, List
-from fastapi_listing.typing import SqlAlchemyModel
+from fastapi_listing.ctyping import SqlAlchemyModel
 
 
 class DaoAbstract(metaclass=ABCMeta):
@@ -8,6 +8,11 @@ class DaoAbstract(metaclass=ABCMeta):
     @property
     @abstractmethod
     def model(self):
+        pass
+
+    @property
+    @abstractmethod
+    def name(self):
         pass
 
     @abstractmethod

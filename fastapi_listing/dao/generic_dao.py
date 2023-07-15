@@ -2,7 +2,7 @@ from fastapi_listing.abstracts import DaoAbstract
 from sqlalchemy.orm import Session
 from typing import Union, Dict, List
 
-from fastapi_listing.typing import SqlAlchemyModel
+from fastapi_listing.ctyping import SqlAlchemyModel
 
 
 class GenericDao(DaoAbstract):  # type:ignore # noqa
@@ -32,6 +32,7 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
     """
 
     # model: SqlAlchemyModel = None to be defined at model dao level
+    # name: str = "DaoName"
 
     def __init__(self, read_db=None, write_db=None):
         # considering that we are dealing with separate read and write dbs.
@@ -84,5 +85,5 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
     def delete(self, ids: List[int]) -> bool:
         raise NotImplementedError
 
-    def get_naive_read(self, fields_to_read: list):
+    def get_default_read(self, fields_to_read: list):
         return self._read_db.query(*fields_to_read)

@@ -1,3 +1,4 @@
+run-name: ${{ github.actor }}
 on: [ push, pull_request ]
 
 jobs:
@@ -8,6 +9,12 @@ jobs:
       matrix:
         python-version: [ 3.7, 3.8, 3.9, '3.10', '3.11' ]
     steps:
+      - name: Setup Test Db
+        run: |
+          docker pull danielhasan1/mysql_employees_test_db
+          docker run -d -p 3307:3306 --name dazzling_wright danielhasan1/mysql_employees_test_db
+          sleep 20
+          docker exec dazzling_wright bash setup-data
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -27,4 +34,12 @@ jobs:
 #          isort --check-only ./fastapi_listing ./tests
       - name: Run tests
         run: |
-          pytest
+          set -e
+          set -x
+          echo "ENV=${ENV}"
+          export PYTHONPATH=.
+          pytest --cov=fastapi_listing --cov=tests --cov-report=term-missing --cov-fail-under=80
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

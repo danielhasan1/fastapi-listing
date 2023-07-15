@@ -8,7 +8,7 @@ class StrategyObjectFactory:
         if key is None or not key:
             raise ValueError(f"Invalid type key!")
         if key in self._strategy:
-            raise ValueError(f"strategy name already in use with {self._strategy[key].__name__}!")
+            raise ValueError(f"strategy name: {key}, already in use with {self._strategy[key].__name__}!")
         if not isinstance(builder, object):
             raise ValueError(f"builder is not a valid callable!")
         self._strategy[key] = builder
@@ -18,6 +18,9 @@ class StrategyObjectFactory:
         if not strategy_:
             raise ValueError(key)
         return strategy_(*args, **kwargs)
+
+    def aware_of(self, key: str) -> bool:
+        return key in self._strategy
 
 
 strategy_factory = StrategyObjectFactory()

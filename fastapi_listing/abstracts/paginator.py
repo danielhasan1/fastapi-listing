@@ -1,14 +1,9 @@
 from abc import ABC, abstractmethod
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.ctyping import SqlAlchemyQuery, ListingResponseType
 
 
 class AbsPaginatingStrategy(ABC):
 
-    @property
     @abstractmethod
-    def default_pagination_params(self):
-        pass
-
-    @abstractmethod
-    def paginate(self, query: SqlAlchemyQuery, request: FastapiRequest, extra_context: dict):
+    def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> ListingResponseType:
         pass

@@ -3,7 +3,7 @@ from typing import List, Dict
 
 from fastapi_listing.abstracts import DaoAbstract
 from fastapi_listing.abstracts import AbsSortingStrategy
-from fastapi_listing.typing import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
 class FilterMechanicsAbstracts(ABC):
