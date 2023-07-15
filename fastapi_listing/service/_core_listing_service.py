@@ -68,7 +68,7 @@ class FastapiListing(ListingBase):
             listing_meta_info.sorting_column_mapper.keys())
         if temp:
             raise NotRegisteredApiException(
-                status_code=409, detail=f"Sorter'(s) not registered with listing: {temp}, Did you forget to do it?")
+                status_code=409, detail=f"Sorter(s) not registered with listing: {temp}, Did you forget to do it?")
         if sorting_params:
             sorting_params = self._replace_aliases(listing_meta_info.sorting_column_mapper, sorting_params)
         else:
@@ -93,7 +93,7 @@ class FastapiListing(ListingBase):
         temp = set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys())
         if temp:
             raise NotRegisteredApiException(
-                status_code=409, detail=f"Filter'(s) not registered with listing: {temp}, Did you forget to do it?")
+                status_code=409, detail=f"Filter(s) not registered with listing: {temp}, Did you forget to do it?")
 
         fltrs = self._replace_aliases(listing_meta_info.filter_column_mapper, fltrs)
 

@@ -13,7 +13,8 @@ from .dao_setup import register
 
 from .service_setup import (
     EmployeeListingService,
-    DepartmentEmployeesListingService
+    DepartmentEmployeesListingService,
+    ErrorProneListingV1,
 )
 
 from .pydantic_setup import (
@@ -83,6 +84,16 @@ def read_main_with_custom_field(request: Request, q: str = Query("titled_employe
 def read_dep_emp_mapping(request: Request):
     resp = DepartmentEmployeesListingService(request).get_listing()
     return resp
+
+
+@app.get("/v1/error-sorting")
+def error_sorting(request: Request):
+    return ErrorProneListingV1(request).get_listing()
+
+
+# @app.get("/v1/errorprone-listing")
+# def error_prone_listing(request: Request):
+#     return ErrorProneListingV2(request).get_listing()
 
 
 client = TestClient(app)
@@ -160,15 +171,6 @@ def test_sorting_on_default_listing():
     })
     assert response.status_code == 200
     assert response.json() == original_responses.test_default_employee_listing_asc_sorted
-
-import logging
-
-logger = logging.getLogger()
-fhandler = logging.FileHandler(filename=r"C:\Users\danis\dev\test.log", mode='a')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fhandler.setFormatter(formatter)
-logger.addHandler(fhandler)
-logger.setLevel(logging.DEBUG)
 
 
 def test_dept_emp_mapping_listing():
@@ -252,6 +254,7 @@ def test_dept_emp_mapping_listing_with_filters():
     assert response.status_code == 200
     assert response.json() == original_responses.test_has_none_value_filter
 
+    # inequality
     response = client.get("/v1/dep-emp", params={
         "filter": get_url_quoted_string([{"field": "gdr2", "value": {"search": "M"}}]),
         "pagination": get_url_quoted_string({"pageSize": 1, "page": 1})
@@ -259,6 +262,7 @@ def test_dept_emp_mapping_listing_with_filters():
     assert response.status_code == 200
     assert response.json() == original_responses.test_inequality_filter
 
+    # in data
     response = client.get("/v1/dep-emp", params={
         "filter": get_url_quoted_string([{"field": "empno", "value": {"list": [499995, 11538]}}]),
         "pagination": get_url_quoted_string({"pageSize": 10, "page": 1})
@@ -266,10 +270,12 @@ def test_dept_emp_mapping_listing_with_filters():
     assert response.status_code == 200
     assert response.json() == original_responses.test_indata_filter
 
+    # unixbetwen
     response = client.get("/v1/dep-emp", params={
         "filter": get_url_quoted_string([{"field": "frmdt", "value": {"start": 1689356654000,
                                                                       "end": 1689356709000}}]),
-        "pagination": get_url_quoted_string({"pageSize": 1, "page": 1})
+        "pagination": get_url_quoted_string({"pageSize": 1, "page": 1}),
+        "sort": get_url_quoted_string([{"field": "empno", "type": "asc"}])
     })
     assert response.status_code == 200
     assert response.json() == original_responses.test_unix_between_filter
@@ -279,3 +285,195 @@ def test_incorrect_type_switch():
     with pytest.raises(ValueError) as e:
         client.get("/v1/employees?q=incorrect_switch")
     assert e.value.args[0] == "unknown strategy type!"
+
+
+def test_sorting_error():
+    with pytest.raises(ValueError) as e:
+        client.get("/v1/error-sorting",
+                   params={"sort": get_url_quoted_string([{"field": "hdt", "type": "asc"}])})
+    assert e.value.args[0] == "Provided sort field is not an attribute of DeptEmp"
+
+def test_core_service_exceptions():
+    resp = client.get("/v1/error-sorting",
+                      params={"sort": '%5B%22field%22%3A%20%22hdt%22%2C%20%22type%22%22asc%22%7D%5D'})
+    assert resp.status_code == 422
+    assert resp.json() == {'detail': 'Crap! Sorting went wrong.'}
+
+    resp = client.get("/v1/error-sorting",
+                      params={"sort": get_url_quoted_string([{"field": "hdtds", "type": "asc"}])})
+
+    assert resp.status_code == 409
+    assert resp.json() ==  {'detail': "Sorter(s) not registered with listing: {'hdtds'}, Did you forget to do it?"}
+
+    resp = client.get("/v1/error-sorting",
+                      params={"filter": get_url_quoted_string([{"field": "hdtds", "type": "asc"}])})
+    assert resp.status_code == 409
+    assert resp.json() == {'detail': "Filter(s) not registered with listing: {'hdtds'}, Did you forget to do it?"}
+    resp = client.get("/v1/error-sorting",
+                      params={"filter": '%5B%22field%22%3A%20%22hdt%22%2C%20%22type%22%22asc%22%7D%5D'})
+
+    assert resp.status_code == 422
+    assert resp.json() == {'detail': 'Crap! Filtering went wrong.'}
+
+    resp = client.get("/v1/error-sorting",
+                      params={"pagination": '%5B%22field%22%3A%20%22hdt%22%2C%20%22type%22%22asc%22%7D%5D'})
+
+    assert resp.status_code == 422
+    assert resp.json() == {'detail': 'Crap! Pagination went wrong.'}
+
+def test_loader():
+    from fastapi_listing.errors import MissingExpectedAttribute
+    from fastapi_listing import loader, ListingService
+    with pytest.raises(MissingExpectedAttribute) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = ""
+
+            def get_listing(self):
+                return ""
+    assert e.value.args[0] == "default_srt_on attribute value is not provided! Did you forget to do it?"
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            query_strategy = "dont know"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            sorting_strategy = "dont know"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            paginate_strategy = "dont know"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            filter_mecha = "dont know"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            sort_mecha = "dont know"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "Avoid using GenericDao Directly! Extend it!"
+
+    with pytest.raises(TypeError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            default_dao = ListingService
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "Invalid Dao Type! Should Be type of GenericDao"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            default_dao = "dfs"
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "Invalid Dao reference Injected!"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            feature_params_adapter = ""
+            default_dao = EmployeeListingService.default_dao
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "Missing Adapter class for client param conversion!"
+
+    with pytest.raises(TypeError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            query_strategy = EmployeeListingService.default_dao
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 has invalid type attribute! Please refer to docs!"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            default_page_size = EmployeeListingService.default_dao
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "ErrorProneListingV2 has invalid default_page_size attribute!"
+
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ErrorProneListingV2(ListingService):
+            default_srt_on = "sdfasd"
+            default_srt_ord = ""
+
+            def get_listing(self):
+                return ""
+
+    assert e.value.args[
+               0] == "Missing default_srt_ord attribute!"
+
+

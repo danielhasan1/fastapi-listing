@@ -26,9 +26,8 @@ def is_mapper_semantic_valid(mapper_val):
 
 
 def register_sort_mapper(mapper_val):
-    for key, val in mapper_val.items():
-        if is_mapper_semantic_valid(val):
-            register(val[0], val[1])
+    if is_mapper_semantic_valid(mapper_val):
+        register(mapper_val[0], mapper_val[1])
 
 
 def unregister(key: str) -> None:

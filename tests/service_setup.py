@@ -1,15 +1,35 @@
 from fastapi_listing import ListingService, FastapiListing
 from fastapi_listing.filters import generic_filters
-from fastapi_listing.factory import filter_factory, strategy_factory
+from fastapi_listing.factory import strategy_factory
 from fastapi_listing.strategies import QueryStrategy
 from fastapi_listing.ctyping import FastapiRequest, SqlAlchemyQuery
 from fastapi_listing.dao import dao_factory
+from fastapi_listing import loader
 
 from .pydantic_setup import EmployeeListDetails, EmployeeListDetailWithCustomFields
 from .dao_setup import EmployeeDao, DeptEmpDao
 from .dao_setup import Employee, Department, Title
 
 
+class DepartmentEmployeesQueryStrategy(QueryStrategy):
+
+    def get_query(self, *, request: FastapiRequest = None, dao: DeptEmpDao = None,
+                  extra_context: dict = None) -> SqlAlchemyQuery:
+        return dao.get_emp_dept_mapping_base_query()
+
+
+class EmployeesQueryStrategy(QueryStrategy):
+
+    def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
+                  extra_context: dict = None) -> SqlAlchemyQuery:
+        return dao.get_employees_with_designations()
+
+
+strategy_factory.register_strategy("dept_emp_mapping_query", DepartmentEmployeesQueryStrategy)
+strategy_factory.register_strategy("titled_employees_query", EmployeesQueryStrategy)
+
+
+@loader.register()
 class EmployeeListingService(ListingService):
     """
     Testing vanilla flow,
@@ -59,6 +79,7 @@ class FullNameFilter(generic_filters.CommonFilterImpl):
         return query
 
 
+@loader.register()
 class DepartmentEmployeesListingService(ListingService):
     default_srt_on = "DeptEmp.emp_no"
 
@@ -87,20 +108,16 @@ class DepartmentEmployeesListingService(ListingService):
         return resp
 
 
-class DepartmentEmployeesQueryStrategy(QueryStrategy):
+@loader.register()
+class ErrorProneListingV1(ListingService):
+    default_srt_on = "DeptEmp.emp_no"
 
-    def get_query(self, *, request: FastapiRequest = None, dao: DeptEmpDao = None,
-                  extra_context: dict = None) -> SqlAlchemyQuery:
-        return dao.get_emp_dept_mapping_base_query()
+    default_dao = DeptEmpDao
 
+    sort_mapper = {
+        "hdt": "Employee.hire_date"
+    }
 
-class EmployeesQueryStrategy(QueryStrategy):
-
-    def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
-                  extra_context: dict = None) -> SqlAlchemyQuery:
-        return dao.get_employees_with_designations()
-
-
-strategy_factory.register_strategy("dept_emp_mapping_query", DepartmentEmployeesQueryStrategy)
-strategy_factory.register_strategy("titled_employees_query", EmployeesQueryStrategy)
+    def get_listing(self):
+        return FastapiListing(self.request, self.dao, fields_to_fetch=["emp_no"]).get_response(self.MetaInfo(self))
 

@@ -125,3 +125,18 @@ def test_factory_key_inputs():
     with pytest.raises(ValueError) as e:
         invalid_type_factory_keys("strategy", "")
     assert e.value.args[0] == "Invalid type key!"
+
+
+def test_dao_factory():
+    from fastapi_listing.dao import dao_factory
+    from .dao_setup import TitleDao
+    with pytest.raises(ValueError) as e:
+        dao_factory.register_dao(None, None)
+    assert e.value.args[0] == "Invalid type key, expected str type got <class 'NoneType'>!"
+    dao_factory.register_dao("titlepre", TitleDao)
+    with pytest.raises(ValueError) as e:
+        dao_factory.register_dao("titlepre", None)
+    assert e.value.args[0] == "Dao name titlepre already in use with TitleDao!"
+    with pytest.raises(ValueError) as e:
+        dao_factory.create(None)
+    assert e.value.args[0] == None

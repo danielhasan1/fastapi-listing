@@ -19,5 +19,8 @@ class StrategyObjectFactory:
             raise ValueError(key)
         return strategy_(*args, **kwargs)
 
+    def aware_of(self, key: str) -> bool:
+        return key in self._strategy
+
 
 strategy_factory = StrategyObjectFactory()
