@@ -63,6 +63,7 @@ setuptools.setup(
             "mypy>=0.971",
             "pytest-mypy>=0.9.1",
             "mysqlclient",
+            "pytest-cov==4.1.0"
         ],
     },
 )
