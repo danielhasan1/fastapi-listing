@@ -6,7 +6,7 @@
 Welcome to fastapi-listing's documentation!
 ===========================================
 
-FastapiListing is an advanced data listing library that works on top of `fastapi <https://fastapi.tiangolo.com/lo/>`_
+FastAPI Listing is an advanced data listing library that works on top of `fastAPI <https://fastapi.tiangolo.com/lo/>`_
 to reduce the efforts in writing and maintaining your listing APIs by providing
 a highly extendable, decoupled and reusable interface. It lets you avoid recreating, duplicating, and writing unreadable code.
 
@@ -14,7 +14,7 @@ a highly extendable, decoupled and reusable interface. It lets you avoid recreat
 
 **Component** based Plug & Play architecture allows you to write easy to use, understandable & more **quickly** readable pieces of code.
 Inject dependencies or swap components as you write more and more complex logics. **Components** follow **single responsibility principle**
-that improves **cohesion** in your code.
+that improves **cohesion** and overall much cleaner composition of code blocks.
 
 It uses `SQLAlchemy <https://en.wikipedia.org/wiki/SQLAlchemy>`_ sqltool at the time but have potential to support multiple ORMs/database
 toolkits and that will be coming soon.
@@ -30,10 +30,9 @@ Features
 * **Easy**: Designed to be easy to use and never having the need to extend core modules.
 * **Short**: Minimize code duplication. Unlimited scope of creating reusable components/features.
 * **Swappable Components**: As components are independent you can write new components, extend existing components.
-* **Filters**: A predefined set of filters. Create new one or extend existing ones. An approach Inspired by **django admin**.
-   Allows you to write really robust and reusable filters.
-* **Extras**: Approach towards more cohesive, less coupled, more readable, easy to use, easy to maintain, fast to understand coding.
-
+* **Filters**: A predefined set of filters. Create new one or extend existing ones. An approach Inspired by **django admin**. Allows you to write really robust and reusable filters.
+* **Backport Compatibility**: Level up your existing listing APIs by using FastAPI Listing without changing any client site dependency by adding your own *adapters*.
+* **Anywhere Dao Session**: Use dao session anywhere and everywhere in your code with single import.
 
 We use strategy pattern at its core so if you don't know anything about it please have a look at `here <https://en.wikipedia.org/wiki/Strategy_pattern>`_
 as a prerequisite.
@@ -41,7 +40,7 @@ as a prerequisite.
 
 Switch between different strategies on the fly, master the art of writing generic solutions that you could reuse and unleash the full potential
 of this advanced listing library. The best part is **Users gain full access in designing there components and taking decisions to write logics as per their API
-needs having complete control over all integral logics**.
+needs having complete control over all integral logics and their behaviours**.
 
 The manual
 ----------

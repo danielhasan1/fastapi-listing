@@ -6,7 +6,9 @@ Preparations
 
 A simple example showing how easy it is to get started. Lets look at a little bit of context for better understanding.
 
-**Note** this is all related to fastapi, your structure may differ, and all fastapi related flow will most of the time carry contextual code.
+**Note** this is all related to FastAPI.
+
+Your project structure may differ, but all FastAPI related flow is similar in context.
 
 I'll be using the following structure for this tutorial:
 
@@ -18,36 +20,38 @@ I'll be using the following structure for this tutorial:
     |   \|-- __init__.py
     |   \|-- :ref:`dao`
     |   |   \|-- __init__.py
-    |   |   \|-- address_dao.py
+    |   |   \|-- title_dao.py
+    |   |   \|-- dept_emp_dao.py
     |   |   \|-- generics
     |   |   |   \|-- __init__.py
     |   |   |   \`-- dao_generics.py
     |   |   \|-- :ref:`models`
     |   |   |   \|-- __init__.py
-    |   |   |   \|-- address.py
-    |   |   |   \`-- user.py
-    |   |   \`-- user_dao.py
+    |   |   |   \|-- title.py
+    |   |   |   \|-- dept_emp.py
+    |   |   |   \`-- employee.py
+    |   |   \`-- employee_dao.py
     |   \|-- :ref:`router`
     |   |   \|-- __init__.py
-    |   |   \`-- user_router.py
+    |   |   \`-- employee_router.py
     |   \|-- :ref:`schema`
     |   |   \|-- __init__.py
     |   |   \|-- request
     |   |   |   \|-- __init__.py
-    |   |   |   \|-- address_requests.py
-    |   |   |   \`-- user_requests.py
+    |   |   |   \|-- title_requests.py
+    |   |   |   \`-- employee_requests.py
     |   |   \`-- response
     |   |       \|-- __init__.py
-    |   |       \|-- address_responses.py
-    |   |       \`-- user_responses.py
+    |   |       \|-- title_responses.py
+    |   |       \`-- employee_responses.py
     |   \`-- :ref:`service<service>`
     |       \|-- __init__.py
     |       \|-- strategies
-    |       \`-- user_service.py
+    |       \`-- employee_service.py
     \|-- main.py
     \`-- requirements.txt
 
-Lets call this app **customer**
+Lets call this app **employee**
 
 
 models
@@ -55,42 +59,43 @@ models
 
 model classes::
 
-    # sample user.py
+    class Employee(Base):
+        __tablename__ = 'employees'
 
-    class User(Base):
-        __tablename__ = 'users'
+        emp_no = Column(Integer, primary_key=True)
+        birth_date = Column(Date, nullable=False)
+        first_name = Column(String(14), nullable=False)
+        last_name = Column(String(16), nullable=False)
+        gender = Column(Enum('M', 'F'), nullable=False)
+        hire_date = Column(Date, nullable=False)
 
-        id = Column(INTEGER, primary_key=True)
-        first_name = Column(VARCHAR(255), nullable=False)
-        last_name = Column(VARCHAR(255))
-        email = Column(VARCHAR(255), unique=True) # unique
-        company = Column(VARCHAR(100))
 
-    class AddressType(enum.Enum):
-        company_address = 1
-        business_address = 2
-        other = 3
+    class DeptEmp(Base):
+        __tablename__ = 'dept_emp'
 
-    # sample address.py
+        emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
+        dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
+                         index=True)
+        from_date = Column(Date, nullable=False)
+        to_date = Column(Date, nullable=False)
 
-    class Address(Base):
-        __tablename__ = 'addresses'
+        department = relationship('Department')
+        employee = relationship('Employee')
 
-        id = Column(INTEGER, primary_key=True)
-        line1 = Column(VARCHAR(255))
-        line2 = Column(VARCHAR(255))
-        city = Column(VARCHAR(255), nullable=False)
-        state = Column(VARCHAR(255), nullable=False, index=True)
-        country = Column(VARCHAR(255), nullable=False)
-        pincode = Column(Integer, nullable=False)
-        type = Column(ENUM(AddressType))
-        user_id = Column(ForeignKey('users.id', ondelete='RESTRICT', onupdate='RESTRICT'), nullable=False, index=True)
+    class Title(Base):
+        __tablename__ = 'titles'
 
+        emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
+        title = Column(String(50), primary_key=True, nullable=False)
+        from_date = Column(Date, primary_key=True, nullable=False)
+        to_date = Column(Date)
+
+        employee = relationship('Employee')
 
 Dao
 ---
 Here we have a dao package where we will be adding all our :ref:`Dao<dao overview>` classes.
-I've additionally added a package in where I like to keep all my generic solutions, for now I've added ``dao_generics.py`` file which looks something
+I've additionally added a package to keep generic methods for common use, e.g. ``dao_generics.py`` file which looks something
 like this::
 
     from fastapi_listing.dao import GenericDao
@@ -112,23 +117,23 @@ like this::
 
 Dao classes::
 
-    # address_dao.py
-    from app.dao.generics import ClassicDaoFeatures
-    from app.dao.model import Address
+    class TitleDao(ClassicDao):
+        name = "title"
+        model = Title
 
+    dao_factory.register_dao(TitleDao.name, TitleDao)
 
-    class AddressDao(ClassicDaoFeatures):
+    class EmployeeDao(ClassicDao):
+        name = "employee"
+        model = Employee
 
-        model = Address
+    dao_factory.register_dao(EmployeeDao.name, EmployeeDao)
 
+    class DeptEmpDao(ClassicDao):
+        name = "deptemp"
+        model = DeptEmp
 
-    # user_dao.py
-    from app.dao.generics import ClassicDaoFeatures
-    from app.dao.model import User
-
-    class UserDao(ClassicDaoFeatures):
-
-        model = User
+    dao_factory.register_dao(DeptEmpDao.name, DeptEmpDao)
 
 
 schema
@@ -136,45 +141,62 @@ schema
 
 Response Schema::
 
-    # user_responses.py
+    class GenderEnum(enum.Enum):
+        MALE = "M"
+        FEMALE = "F"
 
-    class UserListingDetails(BaseModel):
-        id: int
-        first_name: str
-        last_name: str
-        email: str
+    class EmployeeListDetails(BaseModel):
+        emp_no: int = Field(alias="empid", title="Employee ID")
+        birth_date: date = Field(alias="bdt", title="Birth Date")
+        first_name: str = Field(alias="fnm", title="First Name")
+        last_name: str = Field(alias="lnm", title="Last Name")
+        gender: GenderEnum = Field(alias="gdr", title="Gender")
+        hire_date: date = Field(alias="hdt", title="Hiring Date")
 
-    class UserListingResponse(BaseModel):
-        data: list[UserListingDetails]
-        hasNext: bool
-        currentPageNumber: int
+        class Config:
+            orm_mode = True
+            allow_population_by_field_name = True
+
+    class EmployeeListingResponse(BaseModel):
+        data: List[EmployeeListDetails] = []
         currentPageSize: int
+        currentPageNumber: int
+        hasNext: bool
         totalCount: int
 
+
+main
+----
+Add middleware at main file::
+
+    def get_db() -> Session:
+        """
+        replicating sessionmaker for any fastapi app.
+        anyone could be using a different way or opensource packages like fastapi-sqlalchemy
+        it all comes down to a single result that is yielding a session.
+        for the sake of simplicity and testing purpose I'm replicating this behaviour in this naive way.
+        :return: Session
+        """
+        engine = create_engine("mysql://root:123456@127.0.0.1:3307/employees", pool_pre_ping=1)
+        sess = Session(bind=engine)
+        return sess
+
+
+    app = FastAPI()
+    # fastapi-listing middleware offering anywhere dao usage policy. Just like anywhere door use sessions and dao
+    # anywhere in your code.
+    app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
 
 router
 ------
 
+Write abstract listing api routers with FastAPI Listing.
 calling listing endpoint from routers::
 
-    # user_router.py
-    from fastapi import Request, APIRouter, Depends
-    # service defined in service layer
-
-    # service defined at service layer
-    from app.service import UserListingService
-
-
-    user_router_v1 = APIRouter(
-        prefix="/v1/users", tags=["users"]
-    )
-    def get_read_db_session():
-        # sample method to return a sess
-        return Session
-
-    @user_router_v1.get("", response_model=UserListingDetails)
-    def get_users_listing(request: Request):
-        resp = UserListingService(request, read_db=get_read_db_session()).get_listing()
+    @app.get("/v1/employees", response_model=EmployeeListingResponse)
+    def read_main(request: Request):
+        # The service definition will is given below
+        resp = EmployeeListingService(request).get_listing()
         return resp
 
 
@@ -182,36 +204,43 @@ calling listing endpoint from routers::
 
 .. _service:
 
+
 Writing your very first listing API using fastapi-listing.
 ----------------------------------------------------------
-Service layer where I write all my business logics
+Service layer where one write all their business logics
 
 
-Creating your first **listing api** service that will be called from router to return a listing response.::
+Creating your first **listing api** that will be called from router to return a listing response.::
 
-    # user_service.py
 
-    from fastapi_listing import FastapiListing, ListingService
-    from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
-    from app.dao import UserDao
-    from app.schema.response.user_responses import UserListingDetails
+    from fastapi_listing import ListingService, FastapiListing
+    from fastapi_listing import loader # setup utility called when classes are loaded
+    from app.dao import EmployeeDao
+    from app.schema.response.employee_responses import EmployeeListDetails # optional
 
-    class UserListingService(ListingService):
-        # full attribute list given in attribute section
-        default_srt_on = UserDao.model.id.name
-        dao_kls = UserDao
+
+    @loader.register()
+    class EmployeeListingService(ListingService):
+
+        default_srt_on = "Employee.emp_no"
+        default_dao = EmployeeDao
 
         def get_listing(self):
-            resp = FastapiListing(self.request, self.dao, UserListingDetails
+            resp = FastapiListing(self.request, self.dao, EmployeeListDetails
                                     ).get_response(self.MetaInfo(self))
             return resp
 
+    # that's it your very first listing api is ready to be serverd.
 
-* **ListingService**: class is representation of the User listing. Always extend this.
+You actually began writing your listing api here at listing service level. Before this everything was vanilla FastAPI code.
+
+* **ListingService**: Base Exposed class. All Listing Service classes will extend this.
 * **Attributes**: :ref:`attributes overview`
-* **UserListingDetails**: Pydantic class containing required fields to add in listing, only these fields will be fetched from query. Add or remove fields from pydantic class to control query results.
+* **EmployeeListDetails**: Optional pydantic class containing required fields to render. These field will get added automatically in vanilla query.
+    if you are not using pydantic then you could leave it.
 
-Once you runserver, hit the endpoint ``localhost:8000/v1/users`` and you will receive a json response with page size 10 (default page size)
+Once you runserver, hit the endpoint ``localhost:8000/v1/employees`` and you will receive a json response with page size 10 (default page size)
+
 
 Customising your listing listing query
 --------------------------------------
@@ -344,25 +373,29 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
 .. py:attribute:: ListingService.filter_mapper
 
-    A ``dict`` containing allowed filters on the listing. ``{alias: value}`` where key should be an alias of field and value should be
-    the field name given in model class
+    A ``dict`` containing allowed filters on the listing. ``{alias: value}`` where key should be an alias of field and value is
+    a tuple.
 
-    for example: ``{"fnm": "User.first_name"}``
+    for example: ``{"fnm": ("Employees.first_name", filter_class)}``
 
-    value ``"User.first_name"`` shows relation. ``first_name`` from model ``User``. This should always be unique. You could go sane defining your values
+    value ``"Employees.first_name"`` shows relation. ``first_name`` from model ``Employees``. This should always be unique. You could go sane defining your values
     like this which will help you when debugging. split on ``.`` happens and last value is assumed to be actual field.
+    More information will be given at example level
 
 :ref:`alias overview`?
 
 .. py:attribute:: ListingService.sort_mapper
 
-    A ``dict`` containing allowed sorting field on the listing
+    A ``dict`` containing allowed sorting field on the listing. More information will be given with example
 
-:ref:`alias overview`?
 
 .. py:attribute:: ListingService.default_srt_on
 
-    defining listing data default sorting order: **asc**, **dsc**
+    attribute that keeps default sort field for listing data.
+
+.. py:attribute:: ListingService.default_srt_ord
+
+    attribute that keeps default sort order for listing data.
 
 .. py:attribute:: ListingService.paginate_strategy
 
@@ -372,21 +405,30 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
     defining listing service query strategy unique name. Default ``default_query``
 
-.. py:attribute:: ListingService.query_strategy
+.. py:attribute:: ListingService.sorting_strategy
 
     defining listing service sorting strategy unique name. Default ``default_sorter``
 
-.. py:attribute:: ListingService.query_strategy
+.. py:attribute:: ListingService.sort_mecha
 
     defining listing service sort process executor. Default ``singleton_sorter_mechanics``
 
-.. py:attribute:: ListingService.query_strategy
+.. py:attribute:: ListingService.filter_mecha
 
     defining listing service filter process executor. Default ``iterative_filter_mechanics``
 
-.. py:attribute:: ListingService.dao_kls
+.. py:attribute:: ListingService.default_dao
 
     defining listing service :ref:`dao` class. should be created extending ``GenericDao``
+
+.. py:attribute:: ListingService.default_page_size
+
+    defining listing service default page size.
+
+.. py:attribute:: ListingService.feature_params_adapter
+
+    default adapter for to resolve issue between incompatible objects. Users are advices to design their
+    own adapters to support their existing client site filter/sorter/page shift params.
 
 
 
