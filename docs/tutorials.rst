@@ -6,7 +6,7 @@ Preparations
 
 A simple example showing how easy it is to get started. Lets look at a little bit of context for better understanding.
 
-**Note** this is all related to FastAPI.
+**Note** First lets setup the app to use the library
 
 Your project structure may differ, but all FastAPI related flow is similar in context.
 
@@ -101,7 +101,7 @@ like this::
     from fastapi_listing.dao import GenericDao
 
 
-    class ClassicDaoFeatures(GenericDao):  # noqa
+    class ClassicDao(GenericDao):  # noqa
         """
         Not to be used directly as this class is missing an abstract property model.
         model is given when we are registering a new dao class under a new model/table
@@ -116,6 +116,11 @@ like this::
             return self._read_db.query(self.model).filter(sqlalchemy.sql.false())
 
 Dao classes::
+
+    # each dao will be placed in their own module/files
+    from fastapi_listing.dao import dao_factory
+
+    from app.dao import ClassicDao
 
     class TitleDao(ClassicDao):
         name = "title"
@@ -239,70 +244,108 @@ You actually began writing your listing api here at listing service level. Befor
 * **EmployeeListDetails**: Optional pydantic class containing required fields to render. These field will get added automatically in vanilla query.
     if you are not using pydantic then you could leave it.
 
-Once you runserver, hit the endpoint ``localhost:8000/v1/employees`` and you will receive a json response with page size 10 (default page size)
+Once you runserver, hit the endpoint ``localhost:8000/v1/employees`` and you will receive a json response with page size 10 (default page size).
+
+In the next section we will start looking at fun parts like how you could customise and add behaviours as per your project needs.
 
 
 Customising your listing listing query
 --------------------------------------
 
-Extend Query Strategy
-^^^^^^^^^^^^^^^^^^^^^
+Most of the time you will be writing your own custom optimised queries for retrieving listing data and it is not unusual to write
+multiple queries to suit the needs of any user.
 
-Getting users on basis of logged in users company.
+A brief example could be - You have a system where users are grouped together in different roles. Each group of user are separated on
+different layer of data levels so you may need to check two thing in every listing api calls
+1. What role logged in user have,
+2. On which data layer the user lies so only showing data associated to that user.
 
-first add your new optimised query in user dao::
+To tackle this situation you may wanna write different query for each layer. Some queries may look simple some may look advanced some may even corporate caching layer
+and sky is the limit for complexity. If not handled well this part could easily kill your listing api performance and as complexity get greater
+you could easily lose more time in doing maintenance work for existing code then adding new features.
 
-    from __future__ import annotations
-    from app.dao.generics import ClassicDaoFeatures
-    from app.dao.model import User
+It is just a layer of iceberg of problems and I won't be going too deep into discussing every aspect as that is out of the scope of this documentation.
 
-    class UserDao(ClassicDaoFeatures):
+Going back to the topic.
 
-        model = User
+You can write N number of definitions to solve problems like this or even further divide it down to atomic level.
 
-        def get_user_by_company(self, company: str):
-            query = self._read_db.query(self.model).filter(self.model.company == company)
-            return query
+Lets say you have a dept manager table::
+
+    class DeptManager(Base):
+        __tablename__ = 'dept_manager'
+
+        emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
+        dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
+                         index=True)
+        from_date = Column(Date, nullable=False)
+        to_date = Column(Date, nullable=False)
+
+        department = relationship('Department')
+        employee = relationship('Employee')
 
 
-writing your own query strategy,
-way 1 - writing strategy at listing service level(if its easy and you know its gonna be short why not write it just above your listing service)::
+Whenever department managers logs into the app they should only see employees who are associated to them (engineering department manager should only see engineering staff)
 
-    # user_service.py
+Writing your own query strategy::
 
     from fastapi_listing.strategies import QueryStrategy
     from fastapi_listing.factory import strategy_factory
 
 
-    class UserQueryStrategy(QueryStrategy):
+    class DepartmentWiseEmployeesQuery(QueryStrategy):
 
-        NAME = "user_query_v1"
-
-        def get_query(self, *, request: FastapiRequest = None, dao: UserDao = None,
+        def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
                       extra_context: dict = None) -> SqlAlchemyQuery:
-            user = request.user # assuming loggen in user meta info is present
-            user_comp = dao.read({"email":user.email}, fields=["company"])
-            query = dao.get_user_by_company(company=user_comp.company)
+            # as request and dao args are self explanatory
+            # extra_context is a chained variable that can carry contextual data from one place
+            # to another place. extremely helpful when passing args from router or client.
+            dept_no: str = dept_no # assuming we found dept no of logged in manager
+            return dao.get_employees_by_dept(dept_no) # method defined in dao class
+
+    # it is important to register your strategy with factory for use.
+    strategy_factory.register("<whatever name you choose>", DepartmentWiseEmployeesQuery)
+
+Add your new listing query to employee dao::
+
+    from sqlalchemy.orm import Query
+
+    class EmployeeDao(ClassicDao):
+        name = "employee"
+        model = Employee
+
+        def get_employees_by_dept(self, dept_no: str) -> Query:
+            # assuming we have one to one mapping and we are passing manager department here
+            query = self._read_db.query(Employee
+                                        ).join(DeptEmp, Employee.emp_no == DeptEmp.emp_no
+                                        ).filter(DeptEmp.dept_no == dept_no)
             return query
 
 
-    # register your query strategy with strategy factory under unique name
-    strategy_factory.register_strategy(UserQueryStrategy.NAME, UserQueryStrategy)
 
+To use this your client(strategy user not the actual client like logged in user or browser) should be aware to which strategy to use in specefic
+condition::
 
-    class UserListingService(ListingService):
-        # full attribute list given in attribute section
-        default_srt_on = UserDao.model.id.name
-        dao_kls = UserDao
-        query_strategy = UserQueryStrategy.NAME # or "user_query_v1"
+    @loader.register()
+    class EmployeeListingService(ListingService):
+
+        default_srt_on = "Employee.emp_no"
+        default_dao = EmployeeDao
 
         def get_listing(self):
-            resp = FastapiListing(self.request, self.dao, UserListingDetails
+            if user == manager: # imaginary conditions
+                self.switch("<whatever name we choose>") # switch strategy on the fly on object/request level
+            resp = FastapiListing(self.request, self.dao, EmployeeListDetails
                                     ).get_response(self.MetaInfo(self))
             return resp
 
-
-Write as many variations as you want of query strategy change anytime without breaking other logic due to human induced errors.
+Some of the Benefits:
+ - Write/Change your queries independently.
+ - Open/Close relationship.
+ - Dry Code
+ - Improve readability and easy to understand classes
+ - Reduces error which happen when one change breaks existing dependent flow
+ - Ability to reuse existing strategies in other listing services
 
 way 2 - writing complex query strategy preferred way is create a separate module inside **strategies** dir::
 
