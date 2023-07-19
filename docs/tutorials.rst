@@ -57,7 +57,10 @@ Lets call this app **employee**
 models
 ------
 
-model classes::
+model classes
+
+.. code-block:: python
+
 
     class Employee(Base):
         __tablename__ = 'employees'
@@ -74,8 +77,7 @@ model classes::
         __tablename__ = 'dept_emp'
 
         emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
-        dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
-                         index=True)
+        dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False, index=True)
         from_date = Column(Date, nullable=False)
         to_date = Column(Date, nullable=False)
 
@@ -96,7 +98,10 @@ Dao
 ---
 Here we have a dao package where we will be adding all our :ref:`Dao<dao overview>` classes.
 I've additionally added a package to keep generic methods for common use, e.g. ``dao_generics.py`` file which looks something
-like this::
+like this
+
+.. code-block:: python
+
 
     from fastapi_listing.dao import GenericDao
 
@@ -109,13 +114,17 @@ like this::
         """
 
         def check_pk_exist(self, id: int | str) -> bool:
-            return self._read_db.query(self._read_db.query(self.model).filter(self.model.id == id).exists()).scalar()
+            return self._read_db.query(self._read_db.query(self.model
+                                        ).filter(self.model.id == id).exists()).scalar()
 
 
         def get_empty_query(self):
             return self._read_db.query(self.model).filter(sqlalchemy.sql.false())
 
-Dao classes::
+Dao classes
+
+.. code-block:: python
+
 
     # each dao will be placed in their own module/files
     from fastapi_listing.dao import dao_factory
@@ -144,7 +153,10 @@ Dao classes::
 schema
 ------
 
-Response Schema::
+Response Schema
+
+.. code-block:: python
+
 
     class GenderEnum(enum.Enum):
         MALE = "M"
@@ -172,7 +184,10 @@ Response Schema::
 
 main
 ----
-Add middleware at main file::
+Add middleware at main file
+
+.. code-block:: python
+
 
     def get_db() -> Session:
         """
@@ -196,7 +211,9 @@ router
 ------
 
 Write abstract listing api routers with FastAPI Listing.
-calling listing endpoint from routers::
+calling listing endpoint from routers
+
+.. code-block:: python
 
     @app.get("/v1/employees", response_model=EmployeeListingResponse)
     def read_main(request: Request):
@@ -215,7 +232,10 @@ Writing your very first listing API using fastapi-listing.
 Service layer where one write all their business logics
 
 
-Creating your first **listing api** that will be called from router to return a listing response.::
+Creating your first **listing api** that will be called from router to return a listing response.
+
+.. code-block:: python
+    :emphasize-lines: 1, 7, 8, 10, 11, 13, 14, 15
 
 
     from fastapi_listing import ListingService, FastapiListing
@@ -239,177 +259,25 @@ Creating your first **listing api** that will be called from router to return a 
 
 You actually began writing your listing api here at listing service level. Before this everything was vanilla FastAPI code.
 
-* **ListingService**: Base Exposed class. All Listing Service classes will extend this.
+* **loader**: A utility decorator used on startup when classes gets loaded into the memory validates the semantics also helps to identify any abnormality within
+                your defined listing class.
+* **ListingService**: High level base class. All Listing Service classes will extend this.
 * **Attributes**: :ref:`attributes overview`
 * **EmployeeListDetails**: Optional pydantic class containing required fields to render. These field will get added automatically in vanilla query.
     if you are not using pydantic then you could leave it.
+* **get_listing**: High level function, entrypoint for listing service.
+* **FastapiListing**: Low level class that you will only use as an expression which returns a result. Never extend it just use it as an expression like operators.
 
 Once you runserver, hit the endpoint ``localhost:8000/v1/employees`` and you will receive a json response with page size 10 (default page size).
-
-In the next section we will start looking at fun parts like how you could customise and add behaviours as per your project needs.
-
-
-Customising your listing listing query
---------------------------------------
-
-Most of the time you will be writing your own custom optimised queries for retrieving listing data and it is not unusual to write
-multiple queries to suit the needs of any user.
-
-A brief example could be - You have a system where users are grouped together in different roles. Each group of user are separated on
-different layer of data levels so you may need to check two thing in every listing api calls
-1. What role logged in user have,
-2. On which data layer the user lies so only showing data associated to that user.
-
-To tackle this situation you may wanna write different query for each layer. Some queries may look simple some may look advanced some may even corporate caching layer
-and sky is the limit for complexity. If not handled well this part could easily kill your listing api performance and as complexity get greater
-you could easily lose more time in doing maintenance work for existing code then adding new features.
-
-It is just a layer of iceberg of problems and I won't be going too deep into discussing every aspect as that is out of the scope of this documentation.
-
-Going back to the topic.
-
-You can write N number of definitions to solve problems like this or even further divide it down to atomic level.
-
-Lets say you have a dept manager table::
-
-    class DeptManager(Base):
-        __tablename__ = 'dept_manager'
-
-        emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
-        dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
-                         index=True)
-        from_date = Column(Date, nullable=False)
-        to_date = Column(Date, nullable=False)
-
-        department = relationship('Department')
-        employee = relationship('Employee')
-
-
-Whenever department managers logs into the app they should only see employees who are associated to them (engineering department manager should only see engineering staff)
-
-Writing your own query strategy::
-
-    from fastapi_listing.strategies import QueryStrategy
-    from fastapi_listing.factory import strategy_factory
-
-
-    class DepartmentWiseEmployeesQuery(QueryStrategy):
-
-        def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
-                      extra_context: dict = None) -> SqlAlchemyQuery:
-            # as request and dao args are self explanatory
-            # extra_context is a chained variable that can carry contextual data from one place
-            # to another place. extremely helpful when passing args from router or client.
-            dept_no: str = dept_no # assuming we found dept no of logged in manager
-            return dao.get_employees_by_dept(dept_no) # method defined in dao class
-
-    # it is important to register your strategy with factory for use.
-    strategy_factory.register("<whatever name you choose>", DepartmentWiseEmployeesQuery)
-
-Add your new listing query to employee dao::
-
-    from sqlalchemy.orm import Query
-
-    class EmployeeDao(ClassicDao):
-        name = "employee"
-        model = Employee
-
-        def get_employees_by_dept(self, dept_no: str) -> Query:
-            # assuming we have one to one mapping and we are passing manager department here
-            query = self._read_db.query(Employee
-                                        ).join(DeptEmp, Employee.emp_no == DeptEmp.emp_no
-                                        ).filter(DeptEmp.dept_no == dept_no)
-            return query
-
-
-
-To use this your client(strategy user not the actual client like logged in user or browser) should be aware to which strategy to use in specefic
-condition::
-
-    @loader.register()
-    class EmployeeListingService(ListingService):
-
-        default_srt_on = "Employee.emp_no"
-        default_dao = EmployeeDao
-
-        def get_listing(self):
-            if user == manager: # imaginary conditions
-                self.switch("<whatever name we choose>") # switch strategy on the fly on object/request level
-            resp = FastapiListing(self.request, self.dao, EmployeeListDetails
-                                    ).get_response(self.MetaInfo(self))
-            return resp
-
-Some of the Benefits:
- - Write/Change your queries independently.
- - Open/Close relationship.
- - Dry Code
- - Improve readability and easy to understand classes
- - Reduces error which happen when one change breaks existing dependent flow
- - Ability to reuse existing strategies in other listing services
-
-way 2 - writing complex query strategy preferred way is create a separate module inside **strategies** dir::
-
-    # strategies/user_query_strategy.py
-
-    from fastapi_listing.factory import strategy_factory
-    from fastapi_listing.typing import FastapiRequest, SqlAlchemyQuery
-    from fastapi_listing.strategies import QueryStrategy
-
-    from app.dao import UserDao
-    from app.dao.model import User
-
-
-    NAME = "user_query_v2"
-
-
-    class UserQueryStrategyV2(QueryStrategy):
-
-        def get_query(self, *, request: FastapiRequest = None, dao: UserDao = None,
-                      extra_context: dict = None) -> SqlAlchemyQuery:
-            user_obj: User = dao.read({"email":request.user.email}) # getting user object
-
-            if user_obj.access_role == "super_admin":
-                query = dao.get_users_under_super_admin() # dao method to get appropriate query
-
-            elif user_obj.access_role == "admin":
-                query = dao.get_users_under_admin() # dao method to get appropriate query
-
-            elif user_obj.access_role in ["senior_manager", "senior_director"]:
-                query = dao.get_users_under_managers() # dao method to get appropriate query
-            else:
-                # this user should get empty results
-                query = dao.get_empty_query()
-
-            # user table have all company user data only show associated data
-            query = dao.filter_by_company(company=user_obj.company)
-
-            return query
-
-
-    strategy_factory.register_strategy(NAME, DealerPreferenceQueryStrategy)
-
-    # then simply attach this strategy to your listing service
-
-    # user_service.py
-    from app.strategies import user_query_strategy
-
-
-    class UserListingService(ListingService):
-        # full attribute list given in attribute section
-        default_srt_on = UserDao.model.id.name
-        dao_kls = UserDao
-        query_strategy = user_query_strategy.NAME # or "user_query_v2"
-
-        def get_listing(self):
-            resp = FastapiListing(self.request, self.dao, UserListingDetails
-                                    ).get_response(self.MetaInfo(self))
-            return resp
 
 
 .. _attributes overview:
 
-``ListingService`` attributes
------------------------------
+``ListingService`` high level attributes
+----------------------------------------
+
+I've divided down the fundamental blocks of any listing service, You can create these blocks independent from each other
+inject them into your listing service and their composition will communicate implicitly so you can focus more on writing solutions and leave their communication on the core service.
 
 .. py:currentmodule:: fastapi_listing.service.listing_main
 
@@ -434,47 +302,171 @@ way 2 - writing complex query strategy preferred way is create a separate module
 
 .. py:attribute:: ListingService.default_srt_on
 
-    attribute that keeps default sort field for listing data.
+    attribute provides field name that will be used by default to apply sort on query
 
 .. py:attribute:: ListingService.default_srt_ord
 
-    attribute that keeps default sort order for listing data.
+    attributes provides sorting order that will be used to apply sorting by default allowed values are ``asc`` and ``dsc``.
 
 .. py:attribute:: ListingService.paginate_strategy
 
-    defining listing service pagination strategy unique name. Default ``default_paginator``
+    attribute provides pagination strategy name which will be used by listing service to apply pagination on query.
+    Default strategy name ``default_paginator``
+
 
 .. py:attribute::  ListingService.query_strategy
 
-    defining listing service query strategy unique name. Default ``default_query``
+    attribute provides query strategy name, used to get base query for your listing service. Default strategy name ``default_query``
+
 
 .. py:attribute:: ListingService.sorting_strategy
 
-    defining listing service sorting strategy unique name. Default ``default_sorter``
+    attribute provides sorting strategy name, used to apply sorting on your base query. Default strategy name ``default_sorter``
 
 .. py:attribute:: ListingService.sort_mecha
 
-    defining listing service sort process executor. Default ``singleton_sorter_mechanics``
+    When you allow simultaneous sorting on multiple fields/columns in listing data you may wanna customise the behaviour of how sorting is getting applied on query.
+    This attribute provides name of strategy that handles this behaviour.Default strategy name``singleton_sorter_mechanics``
+    Allows only single field sorting at a time.
 
 .. py:attribute:: ListingService.filter_mecha
 
-    defining listing service filter process executor. Default ``iterative_filter_mechanics``
+    As sorting mecha this is also similar i.e., when multiple filters are applied this handle the behaviour of how filter will get applied on query.
+    Default strategy name ``iterative_filter_mechanics``
+    Allows multiple field filtering in iterative fashion. As to why you wanna abrupt this behaviour we will look at it later.
+
 
 .. py:attribute:: ListingService.default_dao
 
-    defining listing service :ref:`dao` class. should be created extending ``GenericDao``
+    provides listing service :ref:`dao` class. should be created by extending ``GenericDao``
+    every listing service should contain primary doa and you tell listing their primary dao by this attribtue
 
 .. py:attribute:: ListingService.default_page_size
 
-    defining listing service default page size.
+    defining listing service default page size. This will the page size by default.
 
 .. py:attribute:: ListingService.feature_params_adapter
 
     default adapter for to resolve issue between incompatible objects. Users are advices to design their
-    own adapters to support their existing client site filter/sorter/page shift params.
+    own adapters to support their existing client site filter/sorter/page params.
+
+
+Customising your listing listing query
+--------------------------------------
+
+Most of the time you will be writing your own custom optimised queries for retrieving listing data and it is not unusual to write
+multiple queries to suit the needs of any user.
+
+A brief example could be - You have a system where users are grouped together in different roles. Each group of user are separated on
+different layer of data levels so you may need to check two thing in every listing api calls
+1. What role logged in user have,
+2. On which data layer the user lies so only showing data associated to that user.
+
+To tackle this situation you may wanna write different query for each layer. Some queries may look simple some may look advanced some may even corporate caching layer
+and sky is the limit for complexity. If not handled well this part could easily kill your listing api performance and as complexity get greater
+you could easily lose more time in doing maintenance work for existing code then adding new features.
+
+It is just a layer of iceberg of problems and I won't be going too deep into discussing every aspect as that is out of the scope of this documentation.
+
+Going back to the topic.
+
+You can write N number of definitions to solve problems like this or even further divide it down to atomic level.
+
+Lets say you have a dept manager table
+
+.. code-block:: python
+
+
+    class DeptManager(Base):
+        __tablename__ = 'dept_manager'
+
+        emp_no = Column(ForeignKey('employees.emp_no', ondelete='CASCADE'), primary_key=True, nullable=False)
+        dept_no = Column(ForeignKey('departments.dept_no', ondelete='CASCADE'), primary_key=True, nullable=False,
+                         index=True)
+        from_date = Column(Date, nullable=False)
+        to_date = Column(Date, nullable=False)
+
+        department = relationship('Department')
+        employee = relationship('Employee')
+
+
+Whenever department managers logs into the app they should only see employees who are associated to them (engineering department manager should only see engineering staff)
+
+Writing your own query strategy
+
+.. code-block:: python
+
+
+    from fastapi_listing.strategies import QueryStrategy
+    from fastapi_listing.factory import strategy_factory
+
+
+    class DepartmentWiseEmployeesQuery(QueryStrategy):
+
+        def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
+                      extra_context: dict = None) -> SqlAlchemyQuery:
+            # as request and dao args are self explanatory
+            # extra_context is a chained variable that can carry contextual data from one place
+            # to another place. extremely helpful when passing args from router or client.
+            dept_no: str = dept_no # assuming we found dept no of logged in manager
+            return dao.get_employees_by_dept(dept_no) # method defined in dao class
+
+    # it is important to register your strategy with factory for use.
+    strategy_factory.register("<whatever name you choose>", DepartmentWiseEmployeesQuery)
+
+Add your new listing query to employee dao
+
+.. code-block:: python
+
+
+    from sqlalchemy.orm import Query
+
+    class EmployeeDao(ClassicDao):
+        name = "employee"
+        model = Employee
+
+        def get_employees_by_dept(self, dept_no: str) -> Query:
+            # assuming we have one to one mapping and we are passing manager department here
+            query = self._read_db.query(Employee
+                                        ).join(DeptEmp, Employee.emp_no == DeptEmp.emp_no
+                                        ).filter(DeptEmp.dept_no == dept_no)
+            return query
 
 
 
+To use this your client(strategy user not the actual client like logged in user or browser) should be aware to which strategy to use in specefic
+condition
+
+.. code-block:: python
+    :emphasize-lines: 9
+
+    @loader.register()
+    class EmployeeListingService(ListingService):
+
+        default_srt_on = "Employee.emp_no"
+        default_dao = EmployeeDao
+        # query_strategy = "default_query"
+        def get_listing(self):
+            if user == manager: # imaginary conditions
+                self.switch("query_strategy","<whatever name we choose>") # switch strategy on the fly on object/request level
+
+            resp = FastapiListing(self.request, self.dao, EmployeeListDetails
+                                    ).get_response(self.MetaInfo(self))
+            return resp
+
+In above example I have decided to make a switch for query strategy at runtime. I have also intentionally commented the default
+query strategy to show how you can plug a query strategy for each listing service at class level.
+Lets say you may wanna handle query related logic completely at query strategy level then you can create a single query strategy class
+write your logics (which query to load when and why) there inject that into your listing and call it a day  but for those people who wanna handle which query strategy to call at
+service level and keep their query strategy classes as concrete as possible they can make use of switch which is suger coated way of saying setattr.
+
+Some of the Benefits:
+ - Write/Change your queries independently.
+ - Open/Close relationship.
+ - Dry Code
+ - Improve readability and easy to understand classes
+ - Reduces error which happen when one change breaks existing dependent flow
+ - Ability to reuse existing strategies in other listing services
 
 
 .. _alias overview:
