@@ -1,7 +1,7 @@
 import inspect
 
 from fastapi_listing.service import ListingService
-from fastapi_listing.factory import filter_factory, _generic_factory, strategy_factory
+from fastapi_listing.factory import filter_factory, _generic_factory, strategy_factory, interceptor_factory
 from fastapi_listing.errors import MissingExpectedAttribute
 from fastapi_listing.dao import GenericDao
 
@@ -15,10 +15,11 @@ import logging
 # logger.setLevel(logging.DEBUG)
 
 
-FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
-logging.basicConfig(format=FORMAT)
-d = {'clientip': '192.168.0.1', 'user': 'fbloggs'}
-logger = logging.getLogger('tcpserver')
+# FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+# logging.basicConfig(format=FORMAT)
+# d = {'clientip': '192.168.0.1', 'user': 'fbloggs'}
+# logger = logging.getLogger('tcpserver')
+
 
 def _validate_strategy_attributes(cls: ListingService):
     if not cls.default_srt_on:
@@ -29,10 +30,6 @@ def _validate_strategy_attributes(cls: ListingService):
         missing_strategy = cls.sorting_strategy
     elif not strategy_factory.aware_of(cls.paginate_strategy):
         missing_strategy = cls.paginate_strategy
-    elif not strategy_factory.aware_of(cls.filter_mecha):
-        missing_strategy = cls.filter_mecha
-    elif not strategy_factory.aware_of(cls.sort_mecha):
-        missing_strategy = cls.sort_mecha
     else:
         missing_strategy = ""
     if missing_strategy:
@@ -65,6 +62,14 @@ def _validate_miscellaneous_attrs(cls: ListingService):
 
     if not cls.default_srt_ord:
         raise ValueError(f"Missing default_srt_ord attribute!")
+    missing_interceptor = ""
+    if not interceptor_factory.aware_of(cls.filter_mecha):
+        missing_interceptor = cls.filter_mecha
+    elif not interceptor_factory.aware_of(cls.sort_mecha):
+        missing_interceptor = cls.sort_mecha
+    if missing_interceptor:
+        raise ValueError(f"{cls.__name__} attribute '{missing_interceptor}' "
+                         f"is not registered/loaded! Did you forget to do it?")
 
 
 def register():

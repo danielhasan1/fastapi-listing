@@ -103,8 +103,7 @@ class ListingServiceBase(ABC):
         if key not in ("paginate_strategy",
                        "query_strategy",
                        "sorting_strategy",
-                       "sort_mecha",
-                       "iterative_filter_mechanics"):
+                       ):
             return False
         return True
 

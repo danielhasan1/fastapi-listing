@@ -7,7 +7,7 @@ from fastapi_listing.abstracts import ListingBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
     NotRegisteredApiException
-from fastapi_listing.factory import strategy_factory
+from fastapi_listing.factory import strategy_factory, interceptor_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
 
@@ -76,7 +76,7 @@ class FastapiListing(ListingBase):
 
         def launch_mechanics(qry):
             mecha: str = listing_meta_info.sorter_mechanic
-            mecha_obj = strategy_factory.create(mecha)
+            mecha_obj = interceptor_factory.create(mecha)
             qry = mecha_obj.apply(query=qry, strategy=listing_meta_info.sorting_strategy,
                                   sorting_params=sorting_params, extra_context=listing_meta_info.extra_context)
             return qry
@@ -98,7 +98,7 @@ class FastapiListing(ListingBase):
         fltrs = self._replace_aliases(listing_meta_info.filter_column_mapper, fltrs)
 
         def launch_mechanics(qry):
-            mecha_obj = strategy_factory.create(listing_meta_info.filter_mechanic)
+            mecha_obj = interceptor_factory.create(listing_meta_info.filter_mechanic)
             qry = mecha_obj.apply(query=qry, filter_params=fltrs, dao=self.dao,
                                   request=self.request, extra_context=listing_meta_info.extra_context)
             return qry

@@ -20,8 +20,8 @@ class ListingService(ListingServiceBase):  # noqa
     paginate_strategy: str = "default_paginator"
     query_strategy: str = "default_query"
     sorting_strategy: str = "default_sorter"
-    sort_mecha: str = "singleton_sorter_mechanics"
-    filter_mecha: str = "iterative_filter_mechanics"
+    sort_mecha: str = "indi_sorter_interceptor"
+    filter_mecha: str = "iterative_filter_interceptor"
     default_page_size: int = 10
     default_dao: GenericDao = GenericDao
     feature_params_adapter: ClientSiteParamAdapter = CoreListingParamsAdapter
@@ -88,18 +88,18 @@ class ListingService(ListingServiceBase):  # noqa
     #     """
     #     hook to provide sort mecha plugin module path as py import path
     #     overwrite allowed to provide custom path.
-    #     :return: import path as string ex. fastapi_listing.mechanics.sorter_mechanics.
+    #     :return: import path as string ex. fastapi_listing.interceptors.sorter_mechanics.
     #     """
-    #     return "fastapi_listing.mechanics.sorter_mechanics"
+    #     return "fastapi_listing.interceptors.sorter_mechanics"
     #
     # @staticmethod
     # def get_filter_mecha_plugin_path() -> str:
     #     """
     #    hook to provide filter mecha plugin module path as py import path
     #    overwrite allowed to provide custom path.
-    #    :return: import path as string ex. fastapi_listing.mechanics.filter_mechanics.
+    #    :return: import path as string ex. fastapi_listing.interceptors.filter_mechanics.
     #    """
-    #     return "fastapi_listing.mechanics.filter_mechanics"
+    #     return "fastapi_listing.interceptors.filter_mechanics"
     #
     # @classmethod
     # def plugins_to_load(cls) -> list[str]:

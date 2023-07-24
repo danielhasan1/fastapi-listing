@@ -1,12 +1,12 @@
 from typing import List, Dict
 
-from fastapi_listing.abstracts import FilterMechanicsAbstracts
+from fastapi_listing.abstracts import AbstractFilterInterceptor
 from fastapi_listing.factory import filter_factory
 from fastapi_listing.filters import CommonFilterImpl
 from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
-class IterativeFilterMechanics(FilterMechanicsAbstracts):
+class IterativeFilterInterceptor(AbstractFilterInterceptor):
     """
     Iterative Filter Applicator.
     Applies all client site filter in iterative manner.
@@ -22,7 +22,7 @@ class IterativeFilterMechanics(FilterMechanicsAbstracts):
     with other relative filters then don't apply other relative filters...
     """
 
-    name = "iterative_filter_mechanics"
+    name = "iterative_filter_interceptor"
 
     def apply(self, *, query: SqlAlchemyQuery = None, filter_params: List[Dict[str, str]], dao=None,
               request: FastapiRequest = None, extra_context: dict = None) -> SqlAlchemyQuery:

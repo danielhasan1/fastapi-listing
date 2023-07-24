@@ -325,7 +325,7 @@ inject them into your listing service and their composition will communicate imp
 
 .. py:attribute:: ListingService.sort_mecha
 
-    When you allow simultaneous sorting on multiple fields/columns in listing data you may wanna customise the behaviour of how sorting is getting applied on query.
+    attribute provide interceptor name.
     This attribute provides name of strategy that handles this behaviour.Default strategy name``singleton_sorter_mechanics``
     Allows only single field sorting at a time.
 

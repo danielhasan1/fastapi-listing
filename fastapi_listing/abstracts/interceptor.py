@@ -6,7 +6,7 @@ from fastapi_listing.abstracts import AbsSortingStrategy
 from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
-class FilterMechanicsAbstracts(ABC):
+class AbstractFilterInterceptor(ABC):
 
     @abstractmethod
     def apply(self, *, query: SqlAlchemyQuery = None, filter_params: List[Dict[str, str]], dao: DaoAbstract = None,
@@ -14,7 +14,7 @@ class FilterMechanicsAbstracts(ABC):
         pass
 
 
-class SorterMechanicsAbstracts(ABC):
+class AbstractSorterInterceptor(ABC):
 
     @abstractmethod
     def apply(self, *, query: SqlAlchemyQuery = None, strategy: AbsSortingStrategy = None,
