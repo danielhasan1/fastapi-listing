@@ -96,7 +96,7 @@ model classes
 
 Dao
 ---
-Here we have a dao package where we will be adding all our :ref:`Dao<dao overview>` classes.
+Here we have a local dao package where we will be adding all our :ref:`Dao<dao overview>` classes.
 I've additionally added a package to keep generic methods for common use, e.g. ``dao_generics.py`` file which looks something
 like this
 
@@ -187,7 +187,7 @@ main
 Add middleware at main file
 
 .. code-block:: python
-
+    :emphasize-lines: 17
 
     def get_db() -> Session:
         """
@@ -214,6 +214,7 @@ Write abstract listing api routers with FastAPI Listing.
 calling listing endpoint from routers
 
 .. code-block:: python
+    :emphasize-lines: 4
 
     @app.get("/v1/employees", response_model=EmployeeListingResponse)
     def read_main(request: Request):
@@ -281,6 +282,7 @@ inject them into your listing service and their composition will communicate imp
 
 .. py:currentmodule:: fastapi_listing.service.listing_main
 
+.. _filter_mapper_label:
 
 .. py:attribute:: ListingService.filter_mapper
 
@@ -289,9 +291,10 @@ inject them into your listing service and their composition will communicate imp
 
     for example: ``{"fnm": ("Employees.first_name", filter_class)}``
 
-    value ``"Employees.first_name"`` shows relation. ``first_name`` from model ``Employees``. This should always be unique. You could go sane defining your values
+    value ``"Employees.first_name"`` shows relation. ``first_name`` from primary model ``Employees``.
+    This should always be unique. You could go sane defining your values
     like this which will help you when debugging. split on ``.`` happens and last value is assumed to be actual field.
-    More information will be given at example level
+    More information will be given at example level.
 
 :ref:`alias overview`?
 
@@ -306,7 +309,7 @@ inject them into your listing service and their composition will communicate imp
 
 .. py:attribute:: ListingService.default_srt_ord
 
-    attributes provides sorting order that will be used to apply sorting by default allowed values are ``asc`` and ``dsc``.
+    attributes provides sorting order that will be used to apply sorting by default allowed values are ``asc`` and ``dsc``. 📝
 
 .. py:attribute:: ListingService.paginate_strategy
 
@@ -326,36 +329,38 @@ inject them into your listing service and their composition will communicate imp
 .. py:attribute:: ListingService.sort_mecha
 
     attribute provide interceptor name.
-    This attribute provides name of strategy that handles this behaviour.Default strategy name``singleton_sorter_mechanics``
+    This attribute provides name of strategy that handles this behaviour.Default strategy name``indi_sorter_interceptor``
     Allows only single field sorting at a time.
 
 .. py:attribute:: ListingService.filter_mecha
 
     As sorting mecha this is also similar i.e., when multiple filters are applied this handle the behaviour of how filter will get applied on query.
-    Default strategy name ``iterative_filter_mechanics``
-    Allows multiple field filtering in iterative fashion. As to why you wanna abrupt this behaviour we will look at it later.
+    Default strategy name ``iterative_filter_interceptor``-
+    Allows multiple field filtering in iterative fashion. As to why you wanna abrupt this behaviour we will learn this when we learn to write our filters. :ref:`learnfilters`
 
 
 .. py:attribute:: ListingService.default_dao
 
     provides listing service :ref:`dao` class. should be created by extending ``GenericDao``
-    every listing service should contain primary doa and you tell listing their primary dao by this attribtue
+    every listing service should contain primary doa and you tell listing their primary dao by this attribute
 
 .. py:attribute:: ListingService.default_page_size
 
     defining listing service default page size. This will the page size by default.
 
+.. _adapter_attr:
+
 .. py:attribute:: ListingService.feature_params_adapter
 
-    default adapter for to resolve issue between incompatible objects. Users are advices to design their
-    own adapters to support their existing client site filter/sorter/page params.
+    default adapter to resolve issue between incompatible objects. Users are advices to design their
+    own adapters to support their existing remote client site filter/sorter/page params.
 
 
-Customising your listing listing query
---------------------------------------
+Customising your listing  query
+-------------------------------
 
 Most of the time you will be writing your own custom optimised queries for retrieving listing data and it is not unusual to write
-multiple queries to suit the needs of any user.
+multiple queries to suit the needs of any logged in user to your service.
 
 A brief example could be - You have a system where users are grouped together in different roles. Each group of user are separated on
 different layer of data levels so you may need to check two thing in every listing api calls
@@ -364,13 +369,14 @@ different layer of data levels so you may need to check two thing in every listi
 
 To tackle this situation you may wanna write different query for each layer. Some queries may look simple some may look advanced some may even corporate caching layer
 and sky is the limit for complexity. If not handled well this part could easily kill your listing api performance and as complexity get greater
-you could easily lose more time in doing maintenance work for existing code then adding new features.
+you could easily lose more time in doing maintenance work for existing code than adding new penny features which could cost you more time.
 
 It is just a layer of iceberg of problems and I won't be going too deep into discussing every aspect as that is out of the scope of this documentation.
 
 Going back to the topic.
 
-You can write N number of definitions to solve problems like this or even further divide it down to atomic level.
+You can write N number of definitions to solve problems like this or even further divide it down to atomic level and just plug them or attach them at runtime
+via writing a custom listing client(a fancy word of saying writing down your own solution to switch between different strategies)
 
 Lets say you have a dept manager table
 
@@ -414,6 +420,8 @@ Writing your own query strategy
     # it is important to register your strategy with factory for use.
     strategy_factory.register("<whatever name you choose>", DepartmentWiseEmployeesQuery)
 
+.. _dept_emp_q_stg:
+
 Add your new listing query to employee dao
 
 .. code-block:: python
@@ -434,7 +442,7 @@ Add your new listing query to employee dao
 
 
 
-To use this your client(strategy user not the actual client like logged in user or browser) should be aware to which strategy to use in specefic
+To use this your listing client(strategy user not the actual client like logged in user or browser) should be aware to which strategy to use in specific
 condition
 
 .. code-block:: python
@@ -455,18 +463,303 @@ condition
             return resp
 
 In above example I have decided to make a switch for query strategy at runtime. I have also intentionally commented the default
-query strategy to show how you can plug a query strategy for each listing service at class level.
+query strategy to show how you can plug a query strategy for each listing service at class level. So whenever a department manager logs in query strategy will be
+switched to fetch relative data and whenever other user logs in they will see global data because you have a default query strategy placed as well.
 Lets say you may wanna handle query related logic completely at query strategy level then you can create a single query strategy class
 write your logics (which query to load when and why) there inject that into your listing and call it a day  but for those people who wanna handle which query strategy to call at
-service level and keep their query strategy classes as concrete as possible they can make use of switch which is suger coated way of saying setattr.
+service level and keep their query strategy classes as atomic as possible they can make use of switch which is suger coated way of saying setattr.
+Personally I like to write atomic level code that is each block is responsible for one thing so whenever someone is reading/writing writing a new revision.
+they could always write their own block and call them and if something goes wrong they could very fast switch to the older version look for possible issues and
+then switch back to the new revision.
 
-Some of the Benefits:
- - Write/Change your queries independently.
- - Open/Close relationship.
+Also helps when you are refactoring your code, this shows all existing code and you will see how the project transformed/took turn for better or for worse.
+
+I would like to say this additionally that this completely depends on your software design skills. Metaphorically One can design a master piece with
+provided apparatus or one can create a normy art with the same apparatus.
+
+Summarised Benefits:
+ - Write/Change your queries independently❤️
+ - Open/Close relationship😍
  - Dry Code
- - Improve readability and easy to understand classes
- - Reduces error which happen when one change breaks existing dependent flow
- - Ability to reuse existing strategies in other listing services
+ - Improve readability and easy to understand classes😍
+ - Reduces error which happen when one change breaks existing dependent flow😎
+ - Ability to reuse existing strategies in other listing services😎
+ - Ability to read software alterations with ease in future😎
+ - Ability to review the change by each development cycle without digging into git history😎
+
+.. _learnfilters:
+
+Adding Filters to your listing API
+----------------------------------
+
+The most interesting part of a listing that becomes the most hated part of any listing super easily.
+
+Starting with an easy request.
+
+Adding a filter that will filter your employee listing on basis of  ``gender``.
+
+.. code-block:: python
+    :emphasize-lines: 1, 7
+
+    from fastapi_listing.filters import generic_filters
+
+
+    @loader.register()
+    class EmployeeListingService(ListingService):
+
+        filter_mapper = {
+            "gdr": ("Employee.gender", generic_filters.EqualityFilter),
+        }
+
+        # rest of the definition is going to be same no change required.
+
+In above example we have imported a module ``generic_filters`` which holds some of the very commonly used query filters supported by FastAPI Listing.
+These are highly reusable and support a cross model in place hook when you may wanna provide secondary model field.
+There are a bunch of filters out of the box to speed up your regular listing API development.😉
+
+
+
+.. list-table::
+   :widths: auto
+
+   * - ``EqualityFilter``
+     - equality filter ``a == b``
+   * - ``InEqualityFilter``
+     - inequality filter ``a != b``
+   * - ``InDataFilter``
+     - ``in`` filter ``a in (b)``
+   * - ``BetweenUnixMilliSecDateFilter``
+     - best way to avoid conflict between date formate awareness. deal in unix timestamp. range filter ``between(start,end)``
+   * - ``StringStartsWithFilter``
+     - like filter ``a like b%``
+   * - ``StringEndsWithFilter``
+     - like filter ``a like %b``
+   * - ``StringContainsFilter``
+     - contains substring filter ``a like %b%``. recommended use on only small tables
+   * - ``StringLikeFilter``
+     - string equality filter ``a like b``
+   * - ``DataGreaterThanFilter``
+     - greater than filter ``a > b``
+   * - ``DataGreaterThanEqualToFilter``
+     - greater than equal to filter ``a >= b``
+   * - ``DataLessThanFilter``
+     - less than filter a < b
+   * - ``DataLessThanEqualToFilter``
+     - less than equal to filter a <= b
+   * - ``DataGropByElementFilter``
+     - aggregation filter ``a group by b``
+   * - ``DataDistinctByElementFilter``
+     - distinct data filter ``distinct a``
+   * - ``HasFieldValue``
+     - has field filter ``a is null`` or ``a is not null``
+   * - ``MySqlNativeDateFormateRangeFilter``
+     - native date formate range filter between(a,b)
+
+
+I hope you still remember :ref:`filter_mapper <filter_mapper_label>`
+
+Each item of this mapping dict has 3 key components.
+
+1. the key itself which will be sent in remote client request.
+2. The tuple
+    * first item is ``model.field`` -> Field associated to primary table. The filter will be applied on it.
+    * second item is your filter class definition.
+
+And that's it you have successfully implemented your first filter.
+
+
+Several benefits of having an alias over your actual fields as shown in the above dict key.
+1. You will never expose your actual field name to the remote client which help to secure your service.
+2. You will have a more cleaner looking request urls which will only make sense to software developers.
+3. It will trim out the extra information exposing from urls.
+
+How FastAPI Listing reads filter params:
+
+* when you have a single value filter - ``[{"field": "alias<(filter mapper dict key)>", "value":{"search":<whatever remote client chose to search>}}]`` 📝
+* when you have multi value filter - ``[{"field": "alias<(filter mapper dict key)>", "value":{"list":<whatever remote client chose to search in list>}}]`` 📝
+* when you have a range value filter - ``[{"field": "alias<(fileter mapper dict key)>", "value":{"start":<whatever remote client chose to search>, "end":<whatever remote client chose to search>}}]`` 📝
+
+**If you have an existing running service that means you already have running remote client setup that will be sending different named query params for filter, then
+use the :ref:`adapter` to make your existing listing service adapt to your existing code.**
+
+
+Customising your filters
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Using secondary model field. Lets say you wanna use a field from ``DeptEmp`` model. If you give the write your filter like this
+
+.. code-block:: python
+
+    filter_mapper = {
+        "gdr": ("Employee.dept_no", generic_filters.EqualityFilter),
+    }
+
+it will raise an attribute error which is expected as your primary model doesnt have this field.
+We have a rule to only allow a primary model plugged to our listing service.
+
+To allow passing secondary model field
+
+.. code-block:: python
+    :emphasize-lines: 2
+
+    filter_mapper = {
+        "dpt": ("Employee.DeptEmp.dept_no", generic_filters.EqualityFilter, lambda x: getattr(DeptEmp, x))
+    }
+
+Lets see what extra we have in our tuple above.
+
+We have an extra lambda definition which tells what model field to use when this filter gets applied.
+As to why I chained two model names ``Employee.DeptEmp.dept_no``?
+
+There is a filter factory which centrally encapsulates all application logic. It works on unique field names(So you can't provide duplicate names).
+the **alias(filter mapper dict key)** could be same for multiple listing services and multiple database schema could contain same field names
+but any database asks you to provide unique schema(table) name similarly we register the filter under `schema.field` name to reduce for users to always coming
+up with random unique names.
+Chaining the name like this shows a clear relation that from ``Employee`` to ``DeptEmp`` where field is ``dept_no``.
+Though you can argue with it and still choose a different way of adding your filter field. Just make sure it is understandable.
+
+Note that if we use filter with this query strategy :ref:`dept emp query strategy <dept_emp_q_stg>` then only this would work. becuase our base query is aware of
+``DeptEmp``.
+
+Writing a custom filter
+^^^^^^^^^^^^^^^^^^^^^^^
+
+You wanna write your own filter because FastAPI Listing default filters were unable to fulfill your use case 🥹.
+
+Its easy to do as well. You wanna write a filter which does a full name scan combining first_name and last_name columns.
+
+.. code-block:: python
+    :emphasize-lines: 2, 4, 6
+
+    from fastapi_listing.filters import generic_filters
+    from fastapi_listing.dao import dao_factory
+
+    class FullNameFilter(generic_filters.CommonFilterImpl):
+
+        def filter(self, *, field: str = None, value: dict = None, query=None) -> SqlAlchemyQuery:
+            # field is not necessary here as this is a custom filter and user have full control over its implementation
+            if value:
+                emp_dao: EmployeeDao = dao_factory.create("employee", replica=True)
+                emp_ids: list[int] = emp_dao.get_emp_ids_contain_full_name(value.get("search"))
+                query = query.filter(self.dao.model.emp_no.in_(emp_ids))
+            return query
+
+As you can see in above filter class we are inheriting from a class which is a part of our ``generic_filters`` module.
+In our filter class we have a single filter method with fixed signature. you will receive your filter value as a dict.
+We have also used **dao factory**  which allows us to use anywhere dao policy.
+You basically filter your query and return it.
+And just like that voila your custom filter is ready. No need to think how you will call it, this will be handled implicitly by filter mechanics(interceptor).
+
+Why do we need an interceptor? Just bear with this example to have an idea of when you may wanna use or write your own interceptor.
+
+Lets say you have a listing of products and a mapping table where products are mapped to some groups and each group belongs to a bigger group.
+
+Your mapping table looks like this
+
+.. code-block:: sql
+
+    id | product_id | group_id | sub_group_id
+
+
+You added filters for group sub group and product on your listing. You wrote your custom filters to either apply **lazy join** or resolve mapping data
+and then apply the filter. So when:
+
+* A user applies Group filter - Your custom Group Filter gets called.
+* A user applies Sub Group filter - Your custom SubGroup Filter gets called with above Group Filter because user hasn't removed above filter.
+* A user applies Product filter with above two filters Your Product filter gets called with maybe with existing ``generic_filters.EqualityFilter`` Filter.
+
+Group -> Sub Group -> Product
+
+As the default interceptor runs in an iterative fashion which applies filter one by one you may end up getting different results. Why? lets see:
+
+You may try to find id of products mapped to Group A and applies filter on these ids. Perfect ✅
+
+``select product_id from mapping where group_id = 'A';``
+
+and then feed these product_id into your filter via ``in`` query.
+
+On application of second filter you will repeat above process to find product ids and apply the filter again but wait will you receive sane results? I doubt it. ❌
+
+``select product_id from mapping where sub_group_id = "A_a";``
+
+First your Group Filter is called. It returned product_ids. Then your Sub Group Filter is called and it may return different product_ids
+again you will feed these product_ids into your filter via ``in`` query. To avoid this you could create an advanced filter which is combination of both.
+Create a custom filter where you could find product_ids with below query
+
+``select product from mapping where group_id = 'A' and sub_group_id = 'A_a';`` ✅
+
+This will give you accurate product_ids. Once you have a custom filter you could detect if these two filters are applied together
+and modify their application by combining these two into one.
+
+Hope this gives you a more clear picture of situations where filter interceptor could play a significance role in reducing code complexity and
+providing a more cleaner approach towards writing your code.
+
+I've faced situations like this in some system and to resolve such situation interceptor could be a big help.
+
+Adding Sorters to your listing API
+----------------------------------
+
+This part is simple. As we leave it in the hand of db to sort our data in its own cluster FastAPI listing provides a strategy class
+to apply sort on our listing query.
+
+.. code-block:: python
+    :emphasize-lines: 3, 4, 5
+
+    @loader.register()
+    class EmployeeListingService(ListingService):
+        default_srt_ord: str = "dsc" # change the value to asc if you want ascending order. default value is dsc for latest data.
+        default_srt_on = "Employee.emp_no" # default sorting field used when no loading listing with no sorting parameter.
+        sort_mapper = {
+            "empid": "emp_no",
+        }
+
+``sort_mapper`` is similar to ``filter_mapper`` where ``empid`` is what remote client sends and ``emp_no`` is what gets used to sort our dataset.
+it is a collection of allowed sorting parameters.
+
+If using primary model you could use it just like shown above.
+
+Or if sorting is implemented on joined table field and like filter mapper
+
+.. code-block:: python
+    :emphasize-lines: 2
+
+    sort_mapper = {
+        "deptno": ("dept_no", lambda x: getattr(DeptEmp, x))
+    }
+
+like filter mapper there is no central sorter factory. As we leave the heavy lifting to DB. so there is no need to provide unique field names for registration purpose.
+Although its better to use ``model.field`` convention like we used in filter mapper to keep the similarity.
+
+Just like filter interceptor you also have an option of sorter interceptor where you could interrupt the default behaviour of applying sort on your query
+and customise how you may wanna apply multi field sorting on your query.
+
+How FastAPI Listing reads sorter params:
+
+``[{"field":"alias", "type":"asc"}]`` or ``[{"field":"alias", "type":"dsc"}]`` 📝
+
+**If you have an existing running service that means you already have running remote client setup that will be sending different named query params for filter, then
+use the** :ref:`adapter <adapter_attr>` **to make your existing listing service adapt to your existing code.**
+
+
+Pagination Strategy
+^^^^^^^^^^^^^^^^^^^
+
+We have a default pagination class. Which handles slicing of our data into pages with variable size. The provided pagination ``class``
+is simple and gets the work done. If you wanna write your own efficient paginating strategy for huge tables or any other use case
+you could write one by extending existing base or abstract paginating strategy ``class``.
+
+For example you may wanna implement a paginating strategy which works on range ids for huge tables or only `previous` `next` pagination strategy and avoid
+any count query.
+
+
+.. code-block:: python
+    :emphasize-lines: 3, 4
+
+    @loader.register()
+    class EmployeeListingService(ListingService):
+        paginate_strategy: str = "default_paginator"
+        default_page_size: int = 10 # default page size modify this to change default page size.
+
 
 
 .. _alias overview:

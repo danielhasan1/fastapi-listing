@@ -110,7 +110,7 @@ shared in tutorial section
 Pagination Strategy
 ^^^^^^^^^^^^^^^^^^^
 
-This component applies slicing technique on implicitly shared query and prepares a complete page response that will be returned to client.
+This component applies slicing technique on implicitly shared query and prepares a complete page response that will be returned to remote client.
 You can change paginating strategy real quick and easily whenever going for query optimization.
 
 .. py:class:: abstracts.AbsPaginatingStrategy
@@ -137,23 +137,23 @@ giving you complete control over your filter definitions and their manipulations
 facade API.
 
 
-The Mechanics layer
-^^^^^^^^^^^^^^^^^^^
+The Interceptor layer
+^^^^^^^^^^^^^^^^^^^^^
 
-Allows user to alter the way filters and sorters are applied. Break through the ordinary iterative approach. Implement your own
-custom behaviour on multi filter application.
+Allows user to alter the way filters and sorters are applied. Break through the ordinary iterative approach. Implement your own custom
+behaviour of execution plan of filters/Sorters.
 
 Reason of existence - In my personal experience there are situations when applying two or many filters directly could cause
-multitude of problems if applied in one by one fashion. Maybe you wanna skip one or combine two filter asks into one
-and form a more optimised and robust query for mysql to handle. You can consider similar scenarios for sorters.
+multitude of problems if applied in one by one fashion like **django-admin**. Maybe you wanna skip one or combine two filter into one
+and form a more optimised and robust query for your db to handle. You can consider similar scenarios for sorters.
 
 The Feature Params Adapter layer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Allows user to write interface that transform client site incompatible objects(http requests params) to be adaptable by
+Allows user to write interface that transform remote client site incompatible objects(http requests params) to be adaptable by
 FastAPI Listing package. Extremely helpful for users who have running services and looking for a better solution to
-manage their codebase.
-This could allow them to use this library without the need to change their client site code and allow FastAPI Listing Service to adapt to their need.
+manage their existing codebase.
+This could allow them to use this library without the need to change their remote client site code and allow FastAPI Listing Service to adapt to their need.
 
 Conclusion
 ----------
