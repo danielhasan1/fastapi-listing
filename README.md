@@ -6,24 +6,143 @@ An Advanced Data Listing Library for fastapi
 [![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml) ![PyPI - Programming Language](https://img.shields.io/pypi/pyversions/fastapi-listing.svg?color=%2334D058)
 [![codecov](https://codecov.io/gh/danielhasan1/fastapi-listing/branch/dev/graph/badge.svg?token=U29ZRNAH8I)](https://codecov.io/gh/danielhasan1/fastapi-listing)
 
-The FastAPI Listing Library is a Python library for building fast, flexible, and customizable listing views in FastAPI web applications. It allows you to easily define listing views for your data models and customize the behavior of those views with minimal code.
+
+The FastAPI Listing Library is a Python library for building fast, extensible, and customizable data listing APIs.
+
+![](/imgs/simple_response.png)
+
+## Usage
+Configure `fastapi-listing` where to look for db `session`.
+```python
+from fastapi import FastAPI
+from sqlalchemy.orm import Session
+
+from fastapi_listing.middlewares import DaoSessionBinderMiddleware
+
+def get_db() -> Session:
+    """
+    replicating sessionmaker for any fastapi app.
+    anyone could be using a different way or opensource packages to produce sessions.
+    it all comes down to a single result that is yielding a session.
+    for the sake of simplicity and testing purpose I'm replicating this behaviour in this way.
+    :return: Session
+    """
+
+    
+app = FastAPI()
+
+app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+```
+How a typical data listing API would look like using `fastapi-listing`
+```python
+from fastapi_listing import ListingService, FastapiListing
+from fastapi_listing import loader
+from app.dao import EmployeeDao # More information is available in docs
+
+
+@loader.register()
+class EmployeeListingService(ListingService):
+
+    default_srt_on = "Employee.emp_no" # configure default field to use for sorting data set.
+    default_dao = EmployeeDao
+    default_page_size = 2 # default page size. accepts dynamic vals from client
+
+    def get_listing(self):
+        fields_to_read = ["emp_no", "birth_date", "first_name",
+                          "last_name", "gender", "hire_date", "image"]
+        resp = FastapiListing(self.request, self.dao, fields_to_fetch=fields_to_read
+                              ).get_response(self.MetaInfo(self))
+        return resp
+```
+
+Just call `EmployeeListingService(request).get_listing()` from FastAPI routers.
+
+```python
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/emps")
+
+@router.get('/', response_model=EmployeeListingDetail)
+def get_emps(request: Request):
+    return EmployeeListingService(request).get_listing()
+```
+
+![](/imgs/simple_response2.png)
+
+Use pydantic to avoid writing field_to_fetch
+```python
+@loader.register()
+class EmployeeListingService(ListingService):
+
+    default_srt_on = "Employee.emp_no"
+    default_dao = EmployeeDao
+    default_page_size = 2
+
+    def get_listing(self):
+        resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListingDetail
+                              ).get_response(self.MetaInfo(self))
+```
+
+## Thinking about adding filters???
+Don't worry I've got you covered😎
+Say you want to add filter for:
+1. Employees gender - return only employees belonging to 'X' gender where X could be anything.
+2. Employees DOB - return Employees belonging to a specific range of DOB.
+3. Employee First Name - return Employees only starting with specific first names.
+```python
+from fastapi_listing.filters import generic_filters # collection of inbuilt filters
+
+
+@loader.register()
+class EmployeeListingService(ListingService):
+
+    filter_mapper = {
+        "gdr": ("Employee.gender", generic_filters.EqualityFilter),
+        "bdt": ("Employee.birth_date", generic_filters.MySqlNativeDateFormateRangeFilter),
+        "fnm": ("Employee.first_name", generic_filters.StringStartsWithFilter),
+    }
+    
+```
+Check out [docs](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#adding-filters-to-your-listing-api) for supported list of filters.
+Additionally, you can create **custom filters** as well.
+## Thinking about adding Sorting???
+I won't leave you hanging there as well😎
+```python
+@loader.register()
+class EmployeeListingService(ListingService):
+    sort_mapper = {
+        "cd": "Employee.emp_no",
+        "bdt": "Employee.birth_date"
+    }
+
+```
+## Provided features are not meeting your requirements???
+It is customizable.😎
+
+You can write custom:
+
+[Query](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#customising-your-listing-query)
+
+[Filters](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#customising-your-filters)
+
+[Sorter](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#adding-sorters-to-your-listing-api)
+
+[Paginator](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#pagination-strategy)
+
 ## Features
 
  - Easy-to-use API for listing and formatting data
- - Customize infinitely(Challenge your design principles)
+ - Customize infinitely
  - Built-in support for pagination, sorting and filtering
- - Built-in support for SQLAlchemy
  - Well defined interface for filter, sorter, paginator
- - The most decoupled API
- - A built-in **semantic** for getting **filters/sorting parameters from clients**
- - Extend anything, swap modules on the fly write n number of versions/strategies
- - The most dry approach you will ever see and create
- - Available adapters allow you to add support for existing client site dependency
- - loaded with features, write the most complex listings api with ease
+ - Support Dependency Injection for easy testing.
+ - Room to adapt the existing remote client query param semantics.
+ - Swap definitions elegantly.
 
 
 # Documentation
 View full documentation at: https://fastapi-listing.readthedocs.io/
+
 
 
 # Feedback, Questions?

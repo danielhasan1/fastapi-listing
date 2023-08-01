@@ -4,7 +4,7 @@ from fastapi_listing.service import ListingService, FastapiListing
 from fastapi_listing.interceptors import IterativeFilterInterceptor, IndiSorterInterceptor
 
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 strategy_factory.register_strategy("default_paginator", PaginationStrategy)
 strategy_factory.register_strategy("default_sorter", SortingOrderStrategy)
