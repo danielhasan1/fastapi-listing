@@ -132,16 +132,20 @@ You can write custom:
 ## Features
 
  - Easy-to-use API for listing and formatting data
- - Customize infinitely
  - Built-in support for pagination, sorting and filtering
  - Well defined interface for filter, sorter, paginator
- - Support Dependency Injection for easy testing.
- - Room to adapt the existing remote client query param semantics.
- - Swap definitions elegantly.
+ - Support Dependency Injection for easy testing
+ - Room to adapt the existing remote client query param semantics
+ - Write standardise listing APIs that will be understood by generations of upcoming developers
+ - Write listing features which is easy on human mind to extend or understand
+ - Break down the most complex listing data APIs into digestible piece of code 
 
+With FastAPI Listing you won't end up like
+
+![](/imgs/meme_read_somones_code.jpg)
 
 # Documentation
-View full documentation at: https://fastapi-listing.readthedocs.io/
+View full documentation at: https://fastapi-listing.readthedocs.io
 
 
 
