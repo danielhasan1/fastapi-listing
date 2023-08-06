@@ -59,10 +59,13 @@ Just call `EmployeeListingService(request).get_listing()` from FastAPI routers.
 
 ```python
 from fastapi import APIRouter
+from fastapi_listing.paginator import ListingPage # Automatic Listing api doc Generation. You can use it as adapter to change meta info in page layout.
+
+from app.service import EmployeeListingService
 
 router = APIRouter(prefix="/emps")
 
-@router.get('/', response_model=EmployeeListingDetail)
+@router.get('/', response_model=ListingPage[EmployeeListingDetail])
 def get_emps(request: Request):
     return EmployeeListingService(request).get_listing()
 ```

@@ -32,7 +32,7 @@ from . import original_responses
 
 from urllib.parse import quote
 
-from fastapi_listing.paginator import Page
+from fastapi_listing.paginator import ListingPage
 # register all models with dao
 
 
@@ -64,28 +64,28 @@ def get_url_quoted_string(d):
 # test routers starts here
 
 
-@app.get("/v1/employees", response_model=Page[EmployeeListDetails])
+@app.get("/v1/employees", response_model=ListingPage[EmployeeListDetails])
 def read_main(request: Request, q: str = Query("vanilla", alias="q")):
     resp = EmployeeListingService(request,
                                   q=q).get_listing()
     return resp
 
 
-@app.get("/v1/custom-employees", response_model=Union[EmployeeListingResponseWithCustomFields,])
+@app.get("/v1/custom-employees", response_model=ListingPage[EmployeeListDetailWithCustomFields])
 def read_main_with_custom_field(request: Request, q: str = Query("custom-fields", alias="q")):
     resp = EmployeeListingService(request,
                                   q=q).get_listing()
     return resp
 
 
-@app.get("/v1/titles-employees", response_model=TitledEmployeeListingResp)
+@app.get("/v1/titles-employees", response_model=ListingPage[TitledEmployeeListingDetails])
 def read_main_with_custom_field(request: Request, q: str = Query("titled_employees", alias="q")):
     resp = EmployeeListingService(request,
                                   q=q).get_listing()
     return resp
 
 
-@app.get("/v1/dep-emp", response_model=DepartMentEmployeeListingResp)
+@app.get("/v1/dep-emp", response_model=ListingPage[DepartMentEmployeeListingDetails])
 def read_dep_emp_mapping(request: Request):
     resp = DepartmentEmployeesListingService(request).get_listing()
     return resp
