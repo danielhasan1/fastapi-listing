@@ -1,5 +1,6 @@
 from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, ListingResponseType
+from fastapi_listing.errors import ListingPaginatorError
 
 
 class PaginationStrategy(AbsPaginatingStrategy):
@@ -15,6 +16,8 @@ class PaginationStrategy(AbsPaginatingStrategy):
 
     def __init__(self, request: FastapiRequest):
         self.request = request
+        self.page_num = 0
+        self.page_size = 0
 
     def get_count(self, query: SqlAlchemyQuery) -> int:
         """
@@ -26,22 +29,47 @@ class PaginationStrategy(AbsPaginatingStrategy):
         """
         return query.count()
 
+    def validate_params(self, page_num, page_size):
+        """validate given 1 based page number and pagesize"""
+        try:
+            if isinstance(page_num, float) and not page_num.is_integer():
+                raise ValueError
+            if isinstance(page_size, float) and not page_size.is_integer():
+                raise ValueError
+            page_num, page_size = int(page_num), int(page_size)
+        except (TypeError, ValueError):
+            raise ListingPaginatorError("pagination params are not valid integers")
+        if page_num < 1 or page_size < 1:
+            raise ListingPaginatorError("page param(s) is less than 1")
+
+    def set_page_num(self, page_num: int):
+        self.page_num = page_num
+
+    def set_page_size(self, page_size: int):
+        self.page_size = page_size
+
     def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> ListingResponseType:
+        page_num = pagination_params.get('page')
+        page_size = pagination_params.get('pageSize')
+        try:
+            self.validate_params(page_num, page_size)
+        except ListingPaginatorError:
+            page_num = 1
+            page_size = 10
+        self.set_page_num(page_num)
+        self.set_page_size(page_size)
+        return self.page(query)
+
+    def page(self, query: SqlAlchemyQuery) -> ListingResponseType:
         count: int = self.get_count(query)
-        has_next: bool = True if count - ((pagination_params.get('page')) * pagination_params.get('pageSize')
-                                    ) > pagination_params.get('pageSize') else False
-        current_page_size: int = pagination_params.get("pageSize")
-        current_page_number: int = pagination_params.get("page")
-        query = query.limit(
-            pagination_params.get('pageSize')
-        ).offset(
-            max(pagination_params.get('page') - 1, 0) * pagination_params.get('pageSize')
-        )
-        #
-        page = dict(
+        has_next = True if count - (self.page_num * self.page_size) > self.page_size else False
+        query = self.slice_query(query)
+        return ListingResponseType(
             hasNext=has_next,
             totalCount=count,
-            currentPageSize=current_page_size,
-            currentPageNumber=current_page_number,
+            currentPageSize=self.page_size,
+            currentPageNumber=self.page_num,
             data=query.all())
-        return page
+
+    def slice_query(self, query: SqlAlchemyQuery):
+        return query.limit(self.page_size).offset(max(self.page_num - 1, 0) * self.page_size)

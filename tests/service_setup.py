@@ -55,14 +55,14 @@ class EmployeeListingService(ListingService):
     def get_listing(self):
         resp = {}
         if self.extra_context.get("q") == "vanilla":
-            resp = FastapiListing(self.request, self.dao, EmployeeListDetails).get_response(self.MetaInfo(self))
+            resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListDetails).get_response(self.MetaInfo(self))
         elif self.extra_context.get("q") == "custom_fields":
-            resp = FastapiListing(self.request, self.dao, EmployeeListDetailWithCustomFields,
+            resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListDetailWithCustomFields,
                                   custom_fields=True).get_response(
                 self.MetaInfo(self))
         elif self.extra_context.get("q") == "titled_employees":
             self.switch("query_strategy", "titled_employees_query")
-            resp = FastapiListing(self.request, self.dao, EmployeeListDetails).get_response(self.MetaInfo(self))
+            resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListDetails).get_response(self.MetaInfo(self))
         elif self.extra_context.get("q") == "incorrect_switch":
             self.switch("sdfasd", "sdfsdf")
         return resp
