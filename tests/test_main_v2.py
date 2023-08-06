@@ -22,12 +22,17 @@ from .pydantic_setup import (
     EmployeeListingResponseWithCustomFields,
     DepartMentEmployeeListingResp,
     TitledEmployeeListingResp,
+    EmployeeListDetails,
+    EmployeeListDetailWithCustomFields,
+    DepartMentEmployeeListingDetails,
+    TitledEmployeeListingDetails
 )
 
 from . import original_responses
 
 from urllib.parse import quote
 
+from fastapi_listing.paginator import Page
 # register all models with dao
 
 
@@ -59,7 +64,7 @@ def get_url_quoted_string(d):
 # test routers starts here
 
 
-@app.get("/v1/employees", response_model=Union[EmployeeListingResponse,])
+@app.get("/v1/employees", response_model=Page[EmployeeListDetails])
 def read_main(request: Request, q: str = Query("vanilla", alias="q")):
     resp = EmployeeListingService(request,
                                   q=q).get_listing()

@@ -10,14 +10,7 @@ from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
 from fastapi_listing.factory import strategy_factory, interceptor_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
-
-try:
-    from pydantic import BaseModel
-
-    HAS_PYDANTIC = True
-except ImportError:
-    HAS_PYDANTIC = False
-    BaseModel: Optional[Type] = None
+from fastapi_listing.utils import HAS_PYDANTIC, BaseModel
 
 
 class FastapiListing(ListingBase):
@@ -35,9 +28,9 @@ class FastapiListing(ListingBase):
     """
 
     def __init__(self, request: Request = None, dao: GenericDao = None,
-                 pydantic_serializer: Optional[Type[BaseModel]] = None,
+                 *, pydantic_serializer: Optional[Type[BaseModel]] = None,
                  fields_to_fetch: List[str] = None,
-                 *, custom_fields: Optional[bool] = False) -> None:
+                 custom_fields: Optional[bool] = False) -> None:
         self.request = request
         self.dao = dao
         if HAS_PYDANTIC and pydantic_serializer:
