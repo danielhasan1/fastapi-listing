@@ -7,7 +7,7 @@ class DaoObjectFactory:
 
     def register_dao(self, key: str, builder):
         if key is None or not key or type(key) is not str:
-            raise ValueError(f"Invalid type key, expected str type got {type(key)}!")
+            raise ValueError(f"Invalid type key, expected str type got {type(key)} for {builder.__name__}!")
         if key in self._dao:
             raise ValueError(f"Dao name {key} already in use with {self._dao[key].__name__}!")
         self._dao[key] = builder

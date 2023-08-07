@@ -74,15 +74,15 @@ def _validate_miscellaneous_attrs(cls: ListingService):
 
 def register():
     def _decorator(cls: ListingService):
+        _validate_miscellaneous_attrs(cls)
+        _validate_strategy_attributes(cls)
+        _validate_dao_attribute(cls)
         filter_mapper = cls.filter_mapper
         sorter_mapper = cls.sort_mapper
         filter_factory.register_filter_mapper(filter_mapper)
         for key, val in sorter_mapper.items():
             if type(val) is tuple:
                 _generic_factory.register_sort_mapper(val)
-        _validate_miscellaneous_attrs(cls)
-        _validate_strategy_attributes(cls)
-        _validate_dao_attribute(cls)
         return cls
     return _decorator
 

@@ -19,7 +19,7 @@ _replica_session: ContextVar[Optional[Session]] = ContextVar("_replica_session",
 class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
-            app: ASGIApp,
+            app: ASGIApp,*,
             master: Callable[[], Session] = None,
             replica: Callable[[], Session] = None,
             session_close_implicit: bool = False
@@ -30,8 +30,8 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
         self.read = replica
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-
-        async with manager(self.read(), self.master(), self.close_implicit):
+        # TODO: lazy sessions
+        async with manager(self.read, self.master, self.close_implicit):
             response = await call_next(request)
         return response
 
@@ -58,18 +58,27 @@ class SessionProvider(metaclass=SessionProviderMeta):
 
 
 @asynccontextmanager
-async def manager(read_ses: Session, master: Session, implicit_close):
+async def manager(read_ses: Callable, master: Callable, implicit_close):
     global _session
     global _replica_session
-    token_read_session: Token = _session.set(read_ses)
-    token_master_session: Token = _replica_session.set(master)
+
+    if read_ses and master:
+        token_read_session: Token = _session.set(read_ses())
+        token_master_session: Token = _replica_session.set(master())
+    elif master:
+        token_master_session: Token = _session.set(master())
+    elif read_ses:
+        token_read_session: Token = _replica_session.set(read_ses())
+    else:
+        raise ValueError("Error with DaoSessionBinderMiddleware! "
+                         "Please provide either args read or master session callables.")
     try:
         yield
     finally:
         if implicit_close:
-            if SessionProvider.session:
+            if _session.get():
                 _session.get().close()
-            if SessionProvider.read_session:
+                _session.reset(token_master_session)  # type: ignore # noqa: F823
+            if _replica_session.get():
                 _replica_session.get().close()
-        _session.reset(token_read_session)
-        _replica_session.reset(token_master_session)
+                _replica_session.reset(token_read_session)  # type: ignore # noqa: F823
