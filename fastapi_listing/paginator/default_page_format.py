@@ -1,7 +1,5 @@
 from typing import Sequence, TypeVar, Generic
 import warnings
-
-from pydantic.generics import GenericModel
 from fastapi_listing.utils import HAS_PYDANTIC, IS_PYDANTIC_V2
 
 

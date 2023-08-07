@@ -118,6 +118,12 @@ class TitleDao(ClassicDao):
     name = "title"
     model = Title
 
+    def get_emp_title_by_id(self, emp_id: int) -> str:
+        return self._read_db.query(self.model.title).filter(self.model.emp_no == emp_id).first().title
+
+    def get_emp_title_by_id_from_master(self, emp_id: int) -> str:
+        return self._write_db.query(self.model.title).filter(self.model.emp_no == emp_id).first().title
+
 
 class SalaryDao(ClassicDao):
     name = "salary"

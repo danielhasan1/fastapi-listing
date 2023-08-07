@@ -240,8 +240,6 @@ class FakePaginationStrategyV2(PaginationStrategy):
 strategy_factory.register_strategy("fake_paginator_strategy_v2", FakePaginationStrategyV2)
 
 
-
-
 def spawn_valueerror_for_strategy_registry(strategy1, strategy2):
     strategy_factory.register_strategy(strategy1, FakePaginationStrategyV2)
     strategy_factory.register_strategy(strategy2, FakePaginationStrategyV2)
@@ -257,4 +255,3 @@ def invalid_type_factory_keys(factory, key):
         filter_factory.register_filter(key, generic_filters.EqualityFilter)
     elif factory == "strategy":
         strategy_factory.register_strategy(key, FakePaginationStrategyV2)
-

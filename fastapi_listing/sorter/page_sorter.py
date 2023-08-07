@@ -1,4 +1,4 @@
-from typing import Dict, Callable
+from typing import Dict
 from fastapi_listing.abstracts import AbsSortingStrategy
 from fastapi_listing.ctyping import SqlAlchemyModel, FastapiRequest, SqlAlchemyQuery, AnySqlAlchemyColumn
 from fastapi_listing.factory import _generic_factory

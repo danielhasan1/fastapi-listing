@@ -1,102 +1,13 @@
-from fastapi import Request
 from fastapi import FastAPI
 import pytest
-from fastapi.testclient import TestClient
 from .fake_listing_setup import  \
     spawn_valueerror_for_strategy_registry, spawn_valueerror_for_filter_factory, invalid_type_factory_keys
+from .test_main_v2 import get_db
+import types
 
 app = FastAPI()
 
-# @app.get("/", response_model=ProductPage)
-# def read_main(request: Request):
-#     resp = TestListingServiceDefaultFlow(request, read_db="read_db_session", write_db="write_db_session").get_listing()
-#     return resp
-#
-#
-# @app.get("/custom-columns", response_model=ProductPageWithCustomColumns)
-# def read_main_with_custom_fields(request: Request):
-#     resp = TestListingServiceDefaultFlowWithCustomColumns(request, read_db="read_db_session",
-#                                                           write_db="write_db_session").get_listing()
-#     return resp
-#
-#
-# @app.get("/var-page", response_model=ProductPage)
-# def read_limit_1_page(request: Request):
-#     resp = TestListingServiceVariablePageFlow(request, read_db="read_db_session",
-#                                               write_db="write_db_session").get_listing()
-#     return resp
-#
-#
-# @app.get("/sort", response_model=ProductPage)
-# def sort_test(reqeust: Request):
-#     resp = TestListingServiceSortFlow(reqeust).get_listing()
-#     return resp
 
-
-client = TestClient(app)
-
-
-# def test_call_default():
-#     response = client.get("/", params={"pagination": "%7B%22pageSize%22%3A10%2C%20%22page%22%3A0%7D"})
-#     assert response.status_code == 200
-#     assert response.json() == fake_db_response
-#
-#
-# def test_call_default_flow_with_custom_columns():
-#     response = client.get("/custom-columns", params={"pagination": "%7B%22pageSize%22%3A10%2C%20%22page%22%3A0%7D"})
-#     assert response.status_code == 200
-#     assert response.json() == fake_db_response_with_custom_column
-#
-#
-# def test_call_variable_page():
-#     response = client.get("/var-page", params={"pagination": "%7B%22pageSize%22%3A1%2C%20%22page%22%3A0%7D"})
-#     assert response.status_code == 200
-#     assert response.json() == fake_db_response_page_size_1
-#
-#
-# def test_call_filter_not_registered():
-#     # filter = [{"field":"abc", "value":{"search":"something"}}]
-#     # with pytest.raises(Exception) as exc_info:
-#     response = client.get("/var-page", params={"pagination": "%7B%22pageSize%22%3A1%2C%20%22page%22%3A0%7D",
-#                                                "filter": "%5B%7B%22field%22%3A%22abc%22%2C%20%22value%22%3A%7B%22search%22%3A%22something%22%7D%7D%5D"})
-#
-#     assert response.status_code == 409
-#     assert response.json().get("detail") == "Filter'(s) not registered with listing: {'abc'}, Did you forget to do it?"
-#
-#
-# def test_call_sort_not_registered():
-#     # sort =[{"field":"abc", "type":"asc"}]
-#     response = client.get("/var-page", params={"pagination": "%7B%22pageSize%22%3A1%2C%20%22page%22%3A0%7D",
-#                                                "sort": "%5B%7B%22field%22%3A%22abc%22%2C%20%22type%22%3A%22asc%22%7D%5D"})
-#
-#     assert response.status_code == 409
-#     assert response.json().get("detail") == "Sorter'(s) not registered with listing: {'abc'}, Did you forget to do it?"
-#
-#
-# def test_defective_sorter_semantic():
-#     response = client.get("/var-page", params={"pagination": "%7B%22pageSize%22%3A1%2C%20%22page%22%3A0%7D",
-#                                                "sort": "%5B%7B%22field%22%3Aabc%22%2C%20%22type%22%22asc%22%7D%5D"})
-#
-#     assert response.status_code == 422
-#     assert response.json().get("detail") == "sorter param is not a valid json!"
-#
-#
-# def test_defective_filter_semantic():
-#     response = client.get("/var-page", params={"pagination": "%7B%22pageSize%22%3A1%2C%20%22page%22%3A0%7D",
-#                                                "filter": "%5B%7B%22field%22%3A%22abc%22%2C%20%22value%22%7B%22searsomething%22%7D%5D"})
-#
-#     assert response.status_code == 422
-#     assert response.json().get("detail") == "filter param is not a valid json!"
-#
-#
-# def test_unknown_sorting_style():
-#     with pytest.raises(AssertionError) as e:
-#         response = client.get("/sort", params={"pagination": "%7B%22pageSize%22%3A1%2C%20%22page%22%3A0%7D",
-#                                                "sort": "%5B%7B%22field%22%3A%22id%22%2C%20%22type%22%3A%22somethingse%22%7D%5D"})
-#
-#     assert e.value.args[0] == "invalid sorting style!"
-#
-#
 def test_strategy_factory_unique_strategy_register():
     with pytest.raises(ValueError) as e:
         spawn_valueerror_for_strategy_registry("same_strategy_key", "same_strategy_key")
@@ -127,16 +38,190 @@ def test_factory_key_inputs():
     assert e.value.args[0] == "Invalid type key!"
 
 
-def test_dao_factory():
+def test_dao_factory_errors():
     from fastapi_listing.dao import dao_factory
+    from fastapi_listing.errors import MissingSessionError
     from .dao_setup import TitleDao
     with pytest.raises(ValueError) as e:
         dao_factory.register_dao(None, None)
-    assert e.value.args[0] == "Invalid type key, expected str type got <class 'NoneType'>!"
+    assert e.value.args[0] == "Invalid type key, expected str type got <class 'NoneType'> for None!"
     dao_factory.register_dao("titlepre", TitleDao)
     with pytest.raises(ValueError) as e:
         dao_factory.register_dao("titlepre", None)
     assert e.value.args[0] == "Dao name titlepre already in use with TitleDao!"
     with pytest.raises(ValueError) as e:
         dao_factory.create(None)
-    assert e.value.args[0] == None
+    assert e.value.args[0] is None
+
+    with pytest.raises(MissingSessionError) as e:
+        dao_factory.create("titlepre")
+    assert e.value.args[0] == """
+        No session found! Either you are not currently in a request context,
+        or you need to manually create a session context and pass the callable to middleware args
+        e.g.
+        callable -> get_db
+        app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+        """
+
+
+def test_dao_factory_working():
+
+    from fastapi_listing.dao import dao_factory
+    from fastapi_listing.middlewares import manager
+    from .dao_setup import TitleDao
+    with manager(read_ses=get_db, master=get_db, implicit_close=True):
+        dao_factory.register_dao("title_2", TitleDao)
+        both_dao: TitleDao = dao_factory.create("title_2", both=True)
+        assert both_dao.get_emp_title_by_id(10001) == "Senior Engineer"
+        del both_dao
+        master_dao: TitleDao = dao_factory.create("title_2", master=True)
+        assert master_dao.get_emp_title_by_id_from_master(10001) == "Senior Engineer"
+        del master_dao
+
+        with pytest.raises(ValueError) as e:
+            dao_factory.create("title_2", replica=False)
+        assert e.value.args[0] == "Invalid creation type for dao object allowed types 'replica', 'master', or 'both'"
+
+
+def test_generic_factory_for_semantics_sorter():
+    from fastapi_listing.factory import _generic_factory
+    _generic_factory.register("test", lambda x: x)  # testing callable example
+    with pytest.raises(ValueError) as e:
+        _generic_factory.register("test", lambda x: x)
+    assert e.value.args[0] == "Factory can not have duplicate builder key test for instance <lambda>"
+    # checking sort mapper registerer and validator
+    sort_mapper = {"test_key": "column_1"}
+    with pytest.raises(ValueError) as e:
+        _generic_factory.register_sort_mapper(sort_mapper)
+    assert e.value.args[0] == "Invalid sorter mapper semantic! Expected tuple!"
+
+    sort_val = ("test",)
+    with pytest.raises(ValueError) as e:
+        _generic_factory.register_sort_mapper(sort_val)
+    assert e.value.args[0] == "Invalid sorter mapper semantic ('test',)! min tuple length should be 2."
+
+    sort_val = (1, 1)
+    with pytest.raises(ValueError) as e:
+        _generic_factory.register_sort_mapper(sort_val)
+    assert e.value.args[0] == "Invalid sorter mapper semantic (1, 1)! first tuple element should be field (str)"
+
+    sort_val = ("test", "test")
+    with pytest.raises(ValueError) as e:
+        _generic_factory.register_sort_mapper(sort_val)
+    assert e.value.args[0] == "positional arg error, expects a callable but received: test!"
+
+    with pytest.raises(ValueError) as e:
+        _generic_factory.create("abc")
+    assert e.value.args[0] == "unknown character type 'abc'"
+
+
+def test_filter_factory_semantics():
+    from fastapi_listing import ListingService, loader
+    from .dao_setup import TitleDao
+
+    # when filter mapper is not having tuple val
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ABCListing(ListingService):  # noqa: F811,F841
+            default_srt_on = "test"
+            filter_mapper = {
+                "test": "abc"
+            }
+            default_dao = TitleDao
+    assert e.value.args[0] == "Invalid filter mapper semantic! Expected tuple!"
+
+    # when filter mapper having incorrect length
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ABCListing(ListingService):  # noqa: F811,F841
+            default_srt_on = "test"
+            filter_mapper = {
+                "test": ("abc",)
+            }
+            default_dao = TitleDao
+    assert e.value.args[0] == "Invalid filter mapper semantic ('abc',)! min tuple length should be 2."
+
+    # checking args
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ABCListing(ListingService):  # noqa: F811,F841
+            default_srt_on = "test"
+            filter_mapper = {
+                "test": (1, "test")
+            }
+            default_dao = TitleDao
+
+    assert e.value.args[0] == "Invalid filter mapper semantic (1, 'test')! first tuple element should be field (str)"
+
+    # checking args
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ABCListing(ListingService):  # noqa: F811,F841
+            default_srt_on = "test"
+            filter_mapper = {
+                "test": ("test", "test")
+            }
+            default_dao = TitleDao
+
+    assert e.value.args[0] == "Invalid filter mapper semantic 'test'! Expects a class!"
+
+    # checking args
+    with pytest.raises(ValueError) as e:
+        @loader.register()
+        class ABCListing(ListingService):  # noqa: F811,F841
+            default_srt_on = "test"
+            filter_mapper = {
+                "test": ("test", object)
+            }
+            default_dao = TitleDao
+
+    assert e.value.args[0] == "Invalid filter mapper semantic <class 'object'>! Expects a subclass of CommonFilterImpl"
+
+    # checking args
+    with pytest.raises(ValueError) as e:
+        from fastapi_listing.filters import generic_filters
+
+        @loader.register()
+        class ABCListing(ListingService):  # noqa: F811,F841
+            default_srt_on = "test"
+            filter_mapper = {
+                "test": ("test", generic_filters.EqualityFilter, 1)
+            }
+            default_dao = TitleDao
+
+    assert e.value.args[0] == "positional arg error, expects a callable but received: 1!"
+
+    # check create error
+    from fastapi_listing.factory import filter_factory
+
+    with pytest.raises(ValueError) as e:
+        filter_factory.create("test_unknown")
+    assert e.value.args[0] == "filter factory couldn't find registered key 'test_unknown'"
+
+
+def test_interceptor_factory():
+    from fastapi_listing.factory import interceptor_factory
+    from fastapi_listing.interceptors import IterativeFilterInterceptor
+
+    with pytest.raises(ValueError) as e:
+        interceptor_factory.register_interceptor(1, object)
+    assert e.value.args[0] == "Invalid type key!"
+    with pytest.raises(ValueError) as e:
+        interceptor_factory.register_interceptor("test", IterativeFilterInterceptor)
+        interceptor_factory.register_interceptor("test", IterativeFilterInterceptor)
+    assert e.value.args[0] == "interceptor name 'test', already in use with 'IterativeFilterInterceptor'!"
+    with pytest.raises(ValueError) as e:
+        interceptor_factory.register_interceptor("test2", "abc")
+    assert e.value.args[0] == "'abc' is not a valid class!"
+
+    with pytest.raises(ValueError) as e:
+        interceptor_factory.create("unknown_interceptor")
+    assert e.value.args[0] == "interceptor factory couldn't find register key 'unknown_interceptor'"
+
+    with pytest.raises(ValueError) as e:
+        interceptor_factory.register_interceptor("testtest", object)
+    assert e.value.args[0] == ("Invalid interceptor class, expects a subclass of either "
+                               "'AbstractSorterInterceptor' or 'AbstractFilterInterceptor'")
+
+
+# write test for strategy class

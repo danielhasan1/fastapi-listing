@@ -79,7 +79,7 @@ def read_main_with_custom_field(request: Request, q: str = Query("custom-fields"
 
 
 @app.get("/v1/titles-employees", response_model=ListingPage[TitledEmployeeListingDetails])
-def read_main_with_custom_field(request: Request, q: str = Query("titled_employees", alias="q")):
+def read_titled_employees(request: Request, q: str = Query("titled_employees", alias="q")):
     resp = EmployeeListingService(request,
                                   q=q).get_listing()
     return resp
@@ -298,6 +298,7 @@ def test_sorting_error():
                    params={"sort": get_url_quoted_string([{"field": "hdt", "type": "asc"}])})
     assert e.value.args[0] == "Provided sort field is not an attribute of DeptEmp"
 
+
 def test_core_service_exceptions():
     resp = client.get("/v1/error-sorting",
                       params={"sort": '%5B%22field%22%3A%20%22hdt%22%2C%20%22type%22%22asc%22%7D%5D'})
@@ -308,7 +309,7 @@ def test_core_service_exceptions():
                       params={"sort": get_url_quoted_string([{"field": "hdtds", "type": "asc"}])})
 
     assert resp.status_code == 409
-    assert resp.json() ==  {'detail': "Sorter(s) not registered with listing: {'hdtds'}, Did you forget to do it?"}
+    assert resp.json() == {'detail': "Sorter(s) not registered with listing: {'hdtds'}, Did you forget to do it?"}
 
     resp = client.get("/v1/error-sorting",
                       params={"filter": get_url_quoted_string([{"field": "hdtds", "type": "asc"}])})
@@ -326,159 +327,113 @@ def test_core_service_exceptions():
     assert resp.status_code == 422
     assert resp.json() == {'detail': 'Crap! Pagination went wrong.'}
 
+
 def test_loader():
     from fastapi_listing.errors import MissingExpectedAttribute
     from fastapi_listing import loader, ListingService
     with pytest.raises(MissingExpectedAttribute) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = ""
 
-            def get_listing(self):
-                return ""
     assert e.value.args[0] == "default_srt_on attribute value is not provided! Did you forget to do it?"
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             query_strategy = "dont know"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+    assert e.value.args[0] == \
+           "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             sorting_strategy = "dont know"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+    assert e.value.args[0] == \
+           "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             paginate_strategy = "dont know"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+    assert e.value.args[0] == \
+           "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             filter_mecha = "dont know"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+    assert e.value.args[0] == \
+           "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             sort_mecha = "dont know"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
+    assert e.value.args[0] == \
+           "ErrorProneListingV2 attribute 'dont know' is not registered/loaded! Did you forget to do it?"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "Avoid using GenericDao Directly! Extend it!"
+    assert e.value.args[0] == "Avoid using GenericDao Directly! Extend it!"
 
     with pytest.raises(TypeError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             default_dao = ListingService
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "Invalid Dao Type! Should Be type of GenericDao"
+    assert e.value.args[0] == "Invalid Dao Type! Should Be type of GenericDao"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             default_dao = "dfs"
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "Invalid Dao reference Injected!"
+    assert e.value.args[0] == "Invalid Dao reference Injected!"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             feature_params_adapter = ""
             default_dao = EmployeeListingService.default_dao
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "Missing Adapter class for client param conversion!"
+    assert e.value.args[0] == "Missing Adapter class for client param conversion!"
 
     with pytest.raises(TypeError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             query_strategy = EmployeeListingService.default_dao
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 has invalid type attribute! Please refer to docs!"
+    assert e.value.args[0] == "ErrorProneListingV2 has invalid type attribute! Please refer to docs!"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             default_page_size = EmployeeListingService.default_dao
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "ErrorProneListingV2 has invalid default_page_size attribute!"
+    assert e.value.args[0] == "ErrorProneListingV2 has invalid default_page_size attribute!"
 
     with pytest.raises(ValueError) as e:
         @loader.register()
-        class ErrorProneListingV2(ListingService):
+        class ErrorProneListingV2(ListingService):  # noqa: F811,F841
             default_srt_on = "sdfasd"
             default_srt_ord = ""
 
-            def get_listing(self):
-                return ""
-
-    assert e.value.args[
-               0] == "Missing default_srt_ord attribute!"
-
-
+    assert e.value.args[0] == "Missing default_srt_ord attribute!"

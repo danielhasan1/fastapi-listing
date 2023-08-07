@@ -32,7 +32,7 @@ class MissingSessionError(Exception):
         msg = """
         No session found! Either you are not currently in a request context,
         or you need to manually create a session context and pass the callable to middleware args
-        e.g. 
+        e.g.
         callable -> get_db
         app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
         """

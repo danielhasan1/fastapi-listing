@@ -7,7 +7,7 @@ from fastapi_listing.abstracts import ListingBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
     NotRegisteredApiException
-from fastapi_listing.factory import strategy_factory, interceptor_factory
+from fastapi_listing.factory import interceptor_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
 from fastapi_listing.utils import HAS_PYDANTIC, BaseModel
@@ -49,7 +49,7 @@ class FastapiListing(ListingBase):
             elif type(mapper[param["field"]]) is str:
                 param["field"] = mapper[param["field"]]
             else:
-                raise ValueError(f"invalid field mapper")
+                raise ValueError("invalid field mapper")
         return req_params
 
     def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
@@ -82,7 +82,7 @@ class FastapiListing(ListingBase):
             fltrs: List[dict] = listing_meta_info.feature_params_adapter.get("filter")
         except Exception:
             raise FastapiListingRequestSemanticApiException(status_code=422,
-                                                            detail=f"Crap! Filtering went wrong.")
+                                                            detail="Crap! Filtering went wrong.")
         temp = set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys())
         if temp:
             raise NotRegisteredApiException(
@@ -104,7 +104,7 @@ class FastapiListing(ListingBase):
             raw_params = listing_meta_info.feature_params_adapter.get("pagination")
             page_params = raw_params if raw_params else {"page": 1, "pageSize": listing_meta_info.default_page_size}
             paginator_params: dict = page_params
-        except Exception as e:
+        except Exception:
             raise FastapiListingRequestSemanticApiException(status_code=422,
                                                             detail="Crap! Pagination went wrong.")
         page = listing_meta_info.paginating_strategy.paginate(query,

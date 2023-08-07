@@ -1,7 +1,6 @@
-import contextlib
 from contextvars import ContextVar, Token
 from typing import Optional, Callable
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -19,7 +18,7 @@ _replica_session: ContextVar[Optional[Session]] = ContextVar("_replica_session",
 class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
-            app: ASGIApp,*,
+            app: ASGIApp, *,
             master: Callable[[], Session] = None,
             replica: Callable[[], Session] = None,
             session_close_implicit: bool = False
@@ -31,7 +30,7 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # TODO: lazy sessions
-        async with manager(self.read, self.master, self.close_implicit):
+        with manager(self.read, self.master, self.close_implicit):
             response = await call_next(request)
         return response
 
@@ -57,14 +56,13 @@ class SessionProvider(metaclass=SessionProviderMeta):
     pass
 
 
-@asynccontextmanager
-async def manager(read_ses: Callable, master: Callable, implicit_close):
+@contextmanager
+def manager(read_ses: Callable, master: Callable, implicit_close):
     global _session
     global _replica_session
-
     if read_ses and master:
-        token_read_session: Token = _session.set(read_ses())
-        token_master_session: Token = _replica_session.set(master())
+        token_read_session: Token = _replica_session.set(read_ses())
+        token_master_session: Token = _session.set(master())
     elif master:
         token_master_session: Token = _session.set(master())
     elif read_ses:

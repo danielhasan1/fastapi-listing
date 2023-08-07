@@ -120,4 +120,3 @@ class ErrorProneListingV1(ListingService):
 
     def get_listing(self):
         return FastapiListing(self.request, self.dao, fields_to_fetch=["emp_no"]).get_response(self.MetaInfo(self))
-

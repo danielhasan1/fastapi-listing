@@ -7,7 +7,7 @@ class DaoObjectFactory:
 
     def register_dao(self, key: str, builder):
         if key is None or not key or type(key) is not str:
-            raise ValueError(f"Invalid type key, expected str type got {type(key)} for {builder.__name__}!")
+            raise ValueError(f"Invalid type key, expected str type got {type(key)} for {builder}!")
         if key in self._dao:
             raise ValueError(f"Dao name {key} already in use with {self._dao[key].__name__}!")
         self._dao[key] = builder
@@ -26,7 +26,7 @@ class DaoObjectFactory:
         elif replica:
             dao_obj = dao_(read_db=SessionProvider.read_session)
         else:
-            raise ValueError
+            raise ValueError("Invalid creation type for dao object allowed types 'replica', 'master', or 'both'")
 
         return dao_obj
 

@@ -15,13 +15,13 @@ def register(key: str, creator: Callable[..., Any]) -> None:
 
 def is_mapper_semantic_valid(mapper_val):
     if type(mapper_val) is not tuple:
-        raise ValueError(f"Invalid filter mapper semantic! Expected tuple!")
-    if len(mapper_val) < 2 or len(mapper_val) > 2:
-        raise ValueError(f"Invalid filter mapper semantic {mapper_val}! min tuple length should be 2.")
+        raise ValueError("Invalid sorter mapper semantic! Expected tuple!")
+    if len(mapper_val) != 2:
+        raise ValueError(f"Invalid sorter mapper semantic {mapper_val}! min tuple length should be 2.")
     if type(mapper_val[0]) is not str:
-        ValueError(f"Invalid filter mapper semantic {mapper_val}! first tuple element should be field (str)")
-    if len(mapper_val) == 3 and not isinstance(mapper_val[1], types.FunctionType):
-        raise ValueError(f"positional arg error, expects a callable but received: {mapper_val[2]}!")
+        raise ValueError(f"Invalid sorter mapper semantic {mapper_val}! first tuple element should be field (str)")
+    if not isinstance(mapper_val[1], types.FunctionType):
+        raise ValueError(f"positional arg error, expects a callable but received: {mapper_val[1]}!")
     return True
 
 

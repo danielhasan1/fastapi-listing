@@ -5,7 +5,7 @@ from typing import Union, Dict, List
 from fastapi_listing.ctyping import SqlAlchemyModel
 
 
-class GenericDao(DaoAbstract):  # type:ignore # noqa
+class GenericDao(DaoAbstract):
     """
     Dao stands for data access object.
     This layers encapsulates all logic that a user may write
@@ -39,7 +39,7 @@ class GenericDao(DaoAbstract):  # type:ignore # noqa
         # we must have two sessions one for read replica and one for master or write replica
         # we should define our reusable attributes here that we will use in each dao method definition
         # even if we are using single db still having two references for the same session won't hurt
-        # for future expansion once we decide to move on to read/write replica architecure
+        # for future expansion once we decide to move on to read/write replica architecture
         # we already have groundwork done and only need to push different connections
         # from request lifecycle layer.
         self._read_db: Session = read_db  # kwargs.get("read_db")

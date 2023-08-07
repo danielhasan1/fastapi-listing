@@ -25,4 +25,3 @@ class IndiSorterInterceptor(AbstractSorterInterceptor):
         latest = sorting_params[-1]
         query = strategy.sort(query=query, value=latest, extra_context=extra_context)
         return query
-

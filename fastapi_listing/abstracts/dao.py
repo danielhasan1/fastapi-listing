@@ -7,12 +7,12 @@ class DaoAbstract(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def model(self):
+    def model(self) -> SqlAlchemyModel:
         pass
 
     @property
     @abstractmethod
-    def name(self):
+    def name(self) -> str:
         pass
 
     @abstractmethod

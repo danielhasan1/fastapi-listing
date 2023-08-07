@@ -1,9 +1,6 @@
 from sqlalchemy.orm import Query
 from abc import ABC, abstractmethod
-from typing import Type
 
-from fastapi_listing.abstracts import AbsSortingStrategy, \
-    AbsPaginatingStrategy
 from fastapi_listing.ctyping import ListingResponseType
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
@@ -109,7 +106,5 @@ class ListingServiceBase(ABC):
 
     def switch(self, strategy_type: str, strategy_name: str):
         if not self._allowed_strategy_types(strategy_type):
-            raise ValueError(f"unknown strategy type!")
+            raise ValueError("unknown strategy type!")
         setattr(self, strategy_type, strategy_name)
-
-

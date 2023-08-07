@@ -1,5 +1,3 @@
-from typing import NamedTuple, Callable, Optional
-
 from fastapi import Request
 
 from fastapi_listing.abstracts import ListingServiceBase
