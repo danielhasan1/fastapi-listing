@@ -7,12 +7,12 @@ An Advanced Data Listing Library for fastapi
 [![codecov](https://codecov.io/gh/danielhasan1/fastapi-listing/branch/dev/graph/badge.svg?token=U29ZRNAH8I)](https://codecov.io/gh/danielhasan1/fastapi-listing)
 
 
-The FastAPI Listing Library is a Python library for building fast, extensible, and customizable data listing APIs.
+A Python library for building fast, extensible, and customizable data listing APIs.
 
 ![](/imgs/simple_response.png)
 
 ## Usage
-Configure `fastapi-listing` where to look for db `session`.
+➡️ Configure `fastapi-listing` for db `session`:
 ```python
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
@@ -31,9 +31,11 @@ def get_db() -> Session:
     
 app = FastAPI()
 
+# with this - use dao classes powered by sqlalchemy sessions anywhere in your project. no more passing sessions as args 
+# here and there.
 app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
 ```
-How a typical data listing API would look like using `fastapi-listing`
+➡️ How a typical data listing API would look like using `fastapi-listing`:
 ```python
 from fastapi_listing import ListingService, FastapiListing
 from fastapi_listing import loader
@@ -55,7 +57,7 @@ class EmployeeListingService(ListingService):
         return resp
 ```
 
-Just call `EmployeeListingService(request).get_listing()` from FastAPI routers.
+➡️ Just call `EmployeeListingService(request).get_listing()` from FastAPI routers:
 
 ```python
 from fastapi import APIRouter
@@ -72,7 +74,7 @@ def get_emps(request: Request):
 
 ![](/imgs/simple_response2.png)
 
-Use pydantic to avoid writing field_to_fetch
+➡️ Use pydantic to avoid re-writing field_to_fetch:
 ```python
 @loader.register()
 class EmployeeListingService(ListingService):
@@ -82,16 +84,20 @@ class EmployeeListingService(ListingService):
     default_page_size = 2
 
     def get_listing(self):
+        # your pydantic model contains custom non sqlalchemy model fields? pass custom_fields=True
         resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListingDetail
                               ).get_response(self.MetaInfo(self))
+        return resp
+        
 ```
 
 ## Thinking about adding filters???
 Don't worry I've got you covered😎
-Say you want to add filter for:
-1. Employees gender - return only employees belonging to 'X' gender where X could be anything.
-2. Employees DOB - return Employees belonging to a specific range of DOB.
-3. Employee First Name - return Employees only starting with specific first names.
+
+➡️ Say you want to add filter on Employee for:
+1.  gender - return only **Employees** belonging to 'X' gender where X could be anything.
+2.  DOB - return **Employees** belonging to a specific range of DOB.
+3.  First Name - return **Employees** only starting with specific first names.
 ```python
 from fastapi_listing.filters import generic_filters # collection of inbuilt filters
 
@@ -107,7 +113,7 @@ class EmployeeListingService(ListingService):
     
 ```
 Check out [docs](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#adding-filters-to-your-listing-api) for supported list of filters.
-Additionally, you can create **custom filters** as well.
+Additionally, you can create **custom filters** as well. Check reference below 📝.
 ## Thinking about adding Sorting???
 I won't leave you hanging there as well😎
 ```python
@@ -122,7 +128,7 @@ class EmployeeListingService(ListingService):
 ## Provided features are not meeting your requirements???
 It is customizable.😎
 
-You can write custom:
+➡️ You can write custom:
 
 [Query](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#customising-your-listing-query)
 
@@ -148,11 +154,11 @@ With FastAPI Listing you won't end up like
 ![](/imgs/meme_read_somones_code.jpg)
 
 # Documentation
-View full documentation at: https://fastapi-listing.readthedocs.io
+View full documentation at: https://fastapi-listing.readthedocs.io ██▓░️░️░️░️░️░️░️
 
 
 
 # Feedback, Questions?
 
-Any form of feedback and questions are welcome! Please create an issue
+Any form of feedback and questions are welcome! Please create an issue  💭
 [here](https://github.com/danielhasan1/fastapi-listing/issues/new).
