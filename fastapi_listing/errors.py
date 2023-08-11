@@ -42,3 +42,7 @@ class MissingSessionError(Exception):
 class MissingExpectedAttribute(Exception):
     """Exception raised for when the user misses expected attribute."""
     pass
+
+
+class FastAPIListingWarning(UserWarning):
+    pass

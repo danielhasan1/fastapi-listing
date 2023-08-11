@@ -70,6 +70,9 @@ def _validate_miscellaneous_attrs(cls: ListingService):
     if missing_interceptor:
         raise ValueError(f"{cls.__name__} attribute '{missing_interceptor}' "
                          f"is not registered/loaded! Did you forget to do it?")
+    if cls.default_page_size > cls.max_page_size:
+        raise ValueError(f"default_page_size {cls.default_page_size!r} can not be greater than max_page_size"
+                         f" {cls.max_page_size!r}")
 
 
 def register():

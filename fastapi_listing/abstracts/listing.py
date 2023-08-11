@@ -108,3 +108,8 @@ class ListingServiceBase(ABC):
         if not self._allowed_strategy_types(strategy_type):
             raise ValueError("unknown strategy type!")
         setattr(self, strategy_type, strategy_name)
+
+    @property
+    @abstractmethod
+    def max_page_size(self) -> int:
+        pass

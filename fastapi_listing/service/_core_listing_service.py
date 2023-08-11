@@ -1,4 +1,5 @@
 from typing import Type, Optional, Dict, List
+from warnings import warn
 
 from fastapi import Request
 from sqlalchemy.orm import Query
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Query
 from fastapi_listing.abstracts import ListingBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
-    NotRegisteredApiException
+    NotRegisteredApiException, FastAPIListingWarning
 from fastapi_listing.factory import interceptor_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
@@ -107,6 +108,14 @@ class FastapiListing(ListingBase):
         except Exception:
             raise FastapiListingRequestSemanticApiException(status_code=422,
                                                             detail="Crap! Pagination went wrong.")
+        if page_params["pageSize"] > listing_meta_info.max_page_size:
+            page_params["pageSize"] = listing_meta_info.max_page_size
+            warn(f"""requested page size is greater than 'max_page_size', overwriting requested page size
+            from {page_params['pageSize']} to {listing_meta_info.max_page_size}""",
+                 FastAPIListingWarning,
+                 stacklevel=8,
+                 )
+
         page = listing_meta_info.paginating_strategy.paginate(query,
                                                               pagination_params=paginator_params,
                                                               extra_context=listing_meta_info.extra_context)

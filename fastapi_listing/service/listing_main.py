@@ -21,6 +21,7 @@ class ListingService(ListingServiceBase):  # noqa
     sort_mecha: str = "indi_sorter_interceptor"
     filter_mecha: str = "iterative_filter_interceptor"
     default_page_size: int = 10
+    max_page_size: int = 50
     default_dao: GenericDao = GenericDao
     feature_params_adapter: ClientSiteParamAdapter = CoreListingParamsAdapter
 
@@ -80,6 +81,7 @@ class ListingService(ListingServiceBase):  # noqa
             self.extra_context = outer_instance.extra_context
             self.feature_params_adapter = outer_instance.feature_params_adapter(outer_instance.request)
             self.default_page_size = outer_instance.default_page_size
+            self.max_page_size = outer_instance.max_page_size
 
     # @staticmethod
     # def get_sort_mecha_plugin_path() -> str:

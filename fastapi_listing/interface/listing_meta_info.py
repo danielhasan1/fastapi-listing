@@ -64,4 +64,6 @@ class ListingMetaInfo(Protocol):
     def default_page_size(self) -> int:  # noqa
         ...
 
-    # where should a protocol file live
+    @property
+    def max_page_size(self) -> int:  # noqa
+        ...
