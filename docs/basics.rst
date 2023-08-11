@@ -17,7 +17,7 @@ The Dao (Data Access Object) layer
 ----------------------------------
 
 FastAPI Listing uses a `dao <https://www.oracle.com/java/technologies/data-access-object.html#:~:text=The%20Data%20Access%20Object%20(or,to%20a%20generic%20client%20interface>`_
-layer although its use is popular in Java but it has many advantages that anyone can leverage while writing complex reusable data access logics.
+layer. Its use is popular in Java but it has many advantages that anyone can leverage while writing complex reusable data access logics.
 The main idea is to separate your business logic from your data access logic.
 
 Benefits
