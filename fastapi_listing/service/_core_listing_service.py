@@ -12,6 +12,7 @@ from fastapi_listing.factory import interceptor_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import ListingResponseType
 from fastapi_listing.utils import HAS_PYDANTIC, BaseModel
+from fastapi_listing.utils import IS_PYDANTIC_V2
 
 
 class FastapiListing(ListingBase):
@@ -35,7 +36,10 @@ class FastapiListing(ListingBase):
         self.request = request
         self.dao = dao
         if HAS_PYDANTIC and pydantic_serializer:
-            self.fields_to_fetch = list(pydantic_serializer.__fields__.keys())
+            if IS_PYDANTIC_V2:
+                self.fields_to_fetch = list(pydantic_serializer.model_fields.keys())
+            else:
+                self.fields_to_fetch = list(pydantic_serializer.__fields__.keys())
         elif fields_to_fetch:
             self.fields_to_fetch = fields_to_fetch
         else:

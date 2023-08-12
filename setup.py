@@ -53,7 +53,7 @@ setuptools.setup(
             "pytest-env>=0.6.2",
             "flake8>=3.9.2",
             "isort>=5.10.1",
-            "pydantic==1.10.7",
+            "pydantic>=1.10.7",
             "starlette>=0.21.0",
             "sqlalchemy>=2.0.7",
             "starlite>=1.38.0",
