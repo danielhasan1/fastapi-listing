@@ -14,26 +14,22 @@ a highly extensible, decoupled and reusable interface.
 Inject dependencies or swap components as you write more and more complex logics.
 
 It uses `SQLAlchemy <https://en.wikipedia.org/wiki/SQLAlchemy>`_ sqltool at the time but have potential to support multiple ORMs/database
-toolkits and that will be coming soon.
+toolkits and that will be coming soon like mongoengine 📝.
 
 Features
 --------
 
 * **Component Based Architecture**: Small collection of independent instructions. Easy to create and attach.
-* **Maintenance**: Fast to code and maintain, Light weight components are easy to maintain in case of multiple development iteration/customisations.
+* **Maintenance**: Fast to code and maintain, Light weight components are easy to create in case of multiple development iteration/customisations.
 * **Fewer Bugs**: Reduce the amount of bugs by always having single responsibility modules, Focus on one sub problem at a time to solve the bigger one.
 * **Easy**: Designed to be easy to use and never having the need to extend core modules.
 * **Short**: Minimize code duplication.
-* **Swappable Components**: As components are independent you can write new components, extend existing components.
-* **Filters**: A predefined set of filters. Create new one or extend existing ones. An approach Inspired by **django admin**. Allows you to write robust and reusable filters.
-* **Backport Compatibility**: Level up your existing listing APIs by using FastAPI Listing without changing any client site dependency utilizing adapter support.
+* **Filters**: A predefined set of filters. Create new one or extend existing ones. An approach Inspired by **django admin**. Allows you to write powerful robust and reusable filters.
+* **Backport Compatibility**: Level up your existing listing APIs by using FastAPI Listing without changing any client site dependency utilizing adapters.
 * **Anywhere Dao objects**: Dao object powered by sqlalchemy sessions are just an import away. Use them anywhere to interact with database.
 
-We use strategy pattern at its core so if you don't know anything about it please have a look at `here <https://en.wikipedia.org/wiki/Strategy_pattern>`_
-as a prerequisite.
+Having some knowledge of design patterns such as strategy pattern, adapter pattern and solid principles could be a plus going forward in this documentation 📚️.
 
-**Users gain full access in designing their components and taking decisions to write logics as per their API
-needs having complete control over all integral logics and their behaviours**.
 
 The manual
 ----------
