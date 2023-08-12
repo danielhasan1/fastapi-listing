@@ -28,5 +28,4 @@ class QueryStrategy(AbsQueryStrategy):
         inst_fields = self.get_inst_attr_to_read(extra_context.get("custom_fields"), extra_context.get("field_list"),
                                                  dao)
         query = dao.get_default_read(inst_fields)
-        print(query.statement)
         return query

@@ -91,10 +91,6 @@ class ListingServiceBase(ABC):
     def get_listing(self):
         pass
 
-    @classmethod
-    def _register_filter_implicitly(cls):
-        pass
-
     @staticmethod
     def _allowed_strategy_types(key: str) -> bool:
         if key not in ("paginate_strategy",
