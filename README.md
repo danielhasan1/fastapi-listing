@@ -9,7 +9,9 @@ An Advanced Data Listing Library for fastapi
 
 A Python library for building fast, extensible, and customizable data listing APIs.
 
-![](/imgs/simple_response.png)
+➡️ Craft powerful Listing APIs designed to serve websites akin to Stack Overflow:
+
+![](/imgs/stackover_client_site_example.gif)
 
 ## Usage
 ➡️ Configure `fastapi-listing` for db `session`:

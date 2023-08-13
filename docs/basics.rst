@@ -185,31 +185,31 @@ So now you know you can intercept the way filters and sorters are applied and ad
 Params Adapter layer
 ^^^^^^^^^^^^^^^^^^^^
 
-Everyone implements filter/sorter/paginator layers at their client site differently. For example stackoverflow:
+Everyone implements filter/sorter/paginator layers at their client site differently. For example stackoverflow🧐:
 
 .. image:: ../imgs/stackoverflow_client_site_param_study2.gif
   :width: 500
   :alt: Stockoverflow client site params study
 
-You might be doing it differently which is perfectly fine. That's where you tell FastAPI Listing to adapt to your client
-site params by leveraging ``CoreListingParamsAdapter``. Here you have access to your http ``request`` object. You can parse your
-query params in such a way that FastAPI Listing could make sense of them.
+You might have a different approach, which is perfectly fine. This is where you can use FastAPI Listing to adjust to the
+parameters of your client's site by utilizing ``CoreListingParamsAdapter``🤓. With this, you can access your HTTP request
+object and parse the query parameters in a way that FastAPI Listing can comprehend.
 
-FastAPI Listing singals ``sort``, ``filter``, ``pagination`` as keys to the adapter and the adapter should send back signaled param translated at native level.
+FastAPI Listing uses ``sort``, ``filter`` and ``pagination`` as keys for the adapter. The adapter should then return the
+translated parameters signaled at the native level.
 
-What is the native way for FastAPI Listing to understand above params you ask?
+Now, you may wonder how FastAPI Listing natively understands the mentioned parameters:
 
-* ``filter`` - ``[{"field":"your_field", "value":{"search":"your_value"}}]`` list of filters applied by clients multiple filters can be applied at a time.
-* ``sort`` - ``[{"field":"your_field", "type":"<asc or dsc>"}]`` list of sorts though by default single sort is supported(as explained above) but you can customise that.
-* ``pagination`` - ``{"pageSize": "integer pagesize", "page": "integer page numebr"} pagination params supporting dynamic resizing of page.
+- Filter: ``[{"field": "<your_field>", "value": {"search": "<your_value>"}}]`` - This represents a list of filters applied by clients, where multiple filters can be applied simultaneously.
+- Sort: ``[{"field": "<your_field>", "type": "<asc or dsc>"}]`` - This indicates a list of sorting instructions. While the default supports single sorting (as explained above), customization is possible.
+- Pagination: ``{"pageSize": "<integer pagesize>", "page": "<integer page number>"}`` - These are pagination parameters that support dynamic resizing of the page.
 
+This feature proves immensely beneficial for user with  existing operational services seeking an enhanced solution to manage
+their current codebase. By leveraging this library, user can potentially integrate it without necessitating modificatin to their remote client
+site code. Consequently, FastAPI Listing Service can seamlessly adapt to their requirements.
 
+Moreover, Filters also provide varying semantics for parameters based on ranges and list.
 
-
-Allows user to write interface that transform remote client site incompatible objects(http requests params) to be adaptable by
-FastAPI Listing package. Extremely helpful for users who have running services and looking for a better solution to
-manage their existing codebase.
-This could allow them to use this library without the need to change their remote client site code and allow FastAPI Listing Service to adapt to their need.
 
 Conclusion
 ----------
