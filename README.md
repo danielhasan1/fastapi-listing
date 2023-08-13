@@ -11,7 +11,8 @@ A Python library for building fast, extensible, and customizable data listing AP
 
 ➡️ Craft powerful Listing APIs designed to serve websites akin to Stack Overflow:
 
-<img src="https://drive.google.com/uc?export=view&id=1dXgWpVzC2sP0fllm3_fIrGuerOiaaDN1"/>
+![](https://drive.google.com/uc?export=view&id=1sCkzxi7OirmtA9gGM0LlK9dryI1dlU4U)
+
 
 ## Usage
 ➡️ Configure `fastapi-listing` for db `session`:
