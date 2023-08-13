@@ -187,12 +187,12 @@ Params Adapter layer
 
 Everyone implements filter/sorter/paginator layers at their client site differently. For example stackoverflow🧐:
 
-.. image:: ../imgs/stackoverflow_client_site_param_study2.gif
+.. image:: https://drive.google.com/uc?export=view&id=1X1DiX7zRhnmJfw-t71Vgk4jnKVIExJzP
   :width: 500
   :alt: Stockoverflow client site params study
 
 You might have a different approach, which is perfectly fine. This is where you can use FastAPI Listing to adjust to the
-parameters of your client's site by utilizing ``CoreListingParamsAdapter``🤓. With this, you can access your HTTP request
+parameters of your client's site by utilizing ``CoreListingParamsAdapter`` 🤓. With this, you can access your HTTP request
 object and parse the query parameters in a way that FastAPI Listing can comprehend.
 
 FastAPI Listing uses ``sort``, ``filter`` and ``pagination`` as keys for the adapter. The adapter should then return the
