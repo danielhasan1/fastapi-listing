@@ -741,8 +741,8 @@ How FastAPI Listing reads sorter params:
 use the** :ref:`adapter <adapter_attr>` **to make your existing listing service adapt to your existing code.**
 
 
-Pagination Strategy
-^^^^^^^^^^^^^^^^^^^
+Customising Paginator Strategy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We have a default pagination class. Which handles slicing of our data into pages with variable size. The provided pagination ``class``
 is simple and gets the work done. If you wanna write your own efficient paginating strategy for huge tables or any other use case

@@ -9,7 +9,9 @@ An Advanced Data Listing Library for fastapi
 
 A Python library for building fast, extensible, and customizable data listing APIs.
 
-![](/imgs/simple_response.png)
+➡️ Craft powerful Listing APIs designed to serve websites akin to Stack Overflow:
+
+![](https://drive.google.com/uc?export=view&id=1dXgWpVzC2sP0fllm3_fIrGuerOiaaDN1)
 
 ## Usage
 ➡️ Configure `fastapi-listing` for db `session`:
@@ -72,7 +74,7 @@ def get_emps(request: Request):
     return EmployeeListingService(request).get_listing()
 ```
 
-![](/imgs/simple_response2.png)
+![](https://drive.google.com/uc?export=view&id=1amgrAdGP7WvXfiNlCYJZPC9fz4_1CidE)
 
 ➡️ Use pydantic to avoid re-writing field_to_fetch:
 ```python
@@ -151,10 +153,10 @@ It is customizable.😎
 
 With FastAPI Listing you won't end up like
 
-![](/imgs/meme_read_somones_code.jpg)
+<img src="https://drive.google.com/uc?export=view&id=1C2ZHltxpdyq4YmBsnbOu4HF9JGt6uMfQ" width="600" height="600"/>
 
 # Documentation
-View full documentation at: https://fastapi-listing.readthedocs.io ██▓░️░️░️░️░️░️░️
+View full documentation at: https://fastapi-listing.readthedocs.io ███▓️░️░️░30%️░️░️░️
 
 
 
