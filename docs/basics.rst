@@ -75,6 +75,7 @@ Query Strategy
 Logical layer to decide on a listing query in a context. By default comes with a ``default_query`` strategy which generates a
 ``select a,b,c,d from some_table`` query using sqlalchemy where a,b,c,d are columns given by the user.
 
+.. _querybasics:
 
 For simple use cases this gets the work done.
 
@@ -160,6 +161,7 @@ facade API. You will see how inbuilt ``generic_filters`` will make it easy and s
 
 🤯 Can it support your existing clients filter parameters? Ofcourse! 😉 :ref:`Make FastAPI Listing adapt to it<adapterbenefit>`.
 
+.. _intereptorbasics:
 
 The Interceptor layer
 ^^^^^^^^^^^^^^^^^^^^^
