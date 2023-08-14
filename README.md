@@ -133,13 +133,12 @@ It is customizable.😎
 
 ➡️ You can write custom:
 
-[Query](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#customising-your-listing-query)
+* Query
+* Filter
+* Sorter
+* Paginator
 
-[Filters](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#customising-your-filters)
-
-[Sorter](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#adding-sorters-to-your-listing-api)
-
-[Paginator](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#pagination-strategy)
+You can check out customisation section in docs after going through basics and tutorials.
 
 ## Features
 
@@ -157,7 +156,7 @@ With FastAPI Listing you won't end up like
 <img src="https://drive.google.com/uc?export=view&id=1C2ZHltxpdyq4YmBsnbOu4HF9JGt6uMfQ" width="600" height="600"/>
 
 # Documentation
-View full documentation at: https://fastapi-listing.readthedocs.io ███▓️░️░️░30%️░️░️░️
+View full documentation at: https://fastapi-listing.readthedocs.io ███▓▓░️░️░35%️░️░️░️
 
 
 

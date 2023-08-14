@@ -35,9 +35,8 @@ The manual
 ----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    basics
    tutorials
-
-
+   advanced_user_guide
