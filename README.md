@@ -1,6 +1,6 @@
 # fastapi-listing
 
-Advanced items listing framework that gives you freedom to design complex listing APIs that can be read by human.
+Advanced items listing library that gives you freedom to design complex listing APIs that can be read by human.
 
 [![.github/workflows/deploy.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml)
 [![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml) ![PyPI - Programming Language](https://img.shields.io/pypi/pyversions/fastapi-listing.svg?color=%2334D058)
