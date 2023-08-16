@@ -6,9 +6,6 @@ Advanced items listing framework that gives you freedom to design complex listin
 [![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml) ![PyPI - Programming Language](https://img.shields.io/pypi/pyversions/fastapi-listing.svg?color=%2334D058)
 [![codecov](https://codecov.io/gh/danielhasan1/fastapi-listing/branch/dev/graph/badge.svg?token=U29ZRNAH8I)](https://codecov.io/gh/danielhasan1/fastapi-listing)
 
-
-A Python library for building fast, extensible, and customizable data listing APIs.
-
 ➡️ Craft powerful Listing APIs designed to serve websites akin to Stack Overflow:
 
 ![](https://drive.google.com/uc?export=view&id=1sCkzxi7OirmtA9gGM0LlK9dryI1dlU4U)
