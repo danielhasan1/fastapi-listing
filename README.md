@@ -33,7 +33,12 @@ app = FastAPI()
 
 # with this - use dao classes powered by sqlalchemy sessions anywhere in your project. no more passing sessions as args 
 # here and there.
-app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+app.add_middleware(DaoSessionBinderMiddleware, master=get_db)
+# using master slave architecture?
+# app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+
+# close all sessions implicitly using fastapi-listing in safe mode
+# app.add_middleware(DaoSessionBinderMiddleware, master=get_db, session_close_implicit=True)
 ```
 ➡️ How a typical data listing API would look like using `fastapi-listing`:
 ```python
