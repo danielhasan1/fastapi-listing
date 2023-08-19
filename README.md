@@ -12,7 +12,9 @@ Advanced items listing library that gives you freedom to design complex listing 
 
 
 ## Usage
-➡️ Configure `fastapi-listing` for db `session`:
+Its really easy to get started. You can create your very first listing API in 3 steps:
+
+1️⃣ Configure `fastapi-listing` for db `session`:
 ```python
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
@@ -35,12 +37,12 @@ app = FastAPI()
 # here and there.
 app.add_middleware(DaoSessionBinderMiddleware, master=get_db)
 # using master slave architecture?
-# app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
 
 # close all sessions implicitly using fastapi-listing in safe mode
-# app.add_middleware(DaoSessionBinderMiddleware, master=get_db, session_close_implicit=True)
+app.add_middleware(DaoSessionBinderMiddleware, master=get_db, session_close_implicit=True)
 ```
-➡️ How a typical data listing API would look like using `fastapi-listing`:
+2️⃣ How a typical data listing API would look like using `fastapi-listing`:
 ```python
 from fastapi_listing import ListingService, FastapiListing
 from fastapi_listing import loader
@@ -51,18 +53,21 @@ from app.dao import EmployeeDao # More information is available in docs
 class EmployeeListingService(ListingService):
 
     default_srt_on = "Employee.emp_no" # configure default field to use for sorting data set.
-    default_dao = EmployeeDao
+    default_dao = EmployeeDao # data access object class
     default_page_size = 2 # default page size. accepts dynamic vals from client
 
     def get_listing(self):
         fields_to_read = ["emp_no", "birth_date", "first_name",
-                          "last_name", "gender", "hire_date", "image"]
+                          "last_name", "gender", "hire_date"] # optional
         resp = FastapiListing(self.request, self.dao, fields_to_fetch=fields_to_read
+                              ).get_response(self.MetaInfo(self))
+        # don't wanna enter fields manually? using pydantic serializer?
+        resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListingDetails
                               ).get_response(self.MetaInfo(self))
         return resp
 ```
 
-➡️ Just call `EmployeeListingService(request).get_listing()` from FastAPI routers:
+3️⃣ Just call `EmployeeListingService(request).get_listing()` from FastAPI routers:
 
 ```python
 from fastapi import APIRouter
@@ -76,25 +81,9 @@ router = APIRouter(prefix="/emps")
 def get_emps(request: Request):
     return EmployeeListingService(request).get_listing()
 ```
-
+Voila 🎉 your very first listing response. (that's even extensible user can manipulate default page structure.)
 ![](https://drive.google.com/uc?export=view&id=1amgrAdGP7WvXfiNlCYJZPC9fz4_1CidE)
 
-➡️ Use pydantic to avoid re-writing field_to_fetch:
-```python
-@loader.register()
-class EmployeeListingService(ListingService):
-
-    default_srt_on = "Employee.emp_no"
-    default_dao = EmployeeDao
-    default_page_size = 2
-
-    def get_listing(self):
-        # your pydantic model contains custom non sqlalchemy model fields? pass custom_fields=True
-        resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListingDetail
-                              ).get_response(self.MetaInfo(self))
-        return resp
-        
-```
 
 ## Thinking about adding filters???
 Don't worry I've got you covered😎
