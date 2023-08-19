@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Query
 from abc import ABC, abstractmethod
 
-from fastapi_listing.ctyping import ListingResponseType
+from fastapi_listing.ctyping import BasePage
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
 from fastapi_listing.dao import GenericDao
@@ -22,11 +22,11 @@ class ListingBase(ABC):
         pass
 
     @abstractmethod
-    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
+    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> BasePage:
         pass
 
     @abstractmethod
-    def get_response(self, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
+    def get_response(self, listing_meta_info: ListingMetaInfo) -> BasePage:
         pass
 
 

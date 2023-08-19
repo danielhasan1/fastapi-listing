@@ -1,5 +1,5 @@
 from fastapi_listing.abstracts import AbsPaginatingStrategy
-from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, ListingResponseType
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, Page, BasePage
 from fastapi_listing.errors import ListingPaginatorError
 
 
@@ -18,6 +18,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
         self.request = request
         self.page_num = 0
         self.page_size = 0
+        self.extra_context = None
 
     def get_count(self, query: SqlAlchemyQuery) -> int:
         """
@@ -48,7 +49,10 @@ class PaginationStrategy(AbsPaginatingStrategy):
     def set_page_size(self, page_size: int):
         self.page_size = page_size
 
-    def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> ListingResponseType:
+    def set_extra_context(self, extra_context):
+        self.extra_context = extra_context
+
+    def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> BasePage:
         page_num = pagination_params.get('page')
         page_size = pagination_params.get('pageSize')
         try:
@@ -58,18 +62,36 @@ class PaginationStrategy(AbsPaginatingStrategy):
             page_size = 10
         self.set_page_num(page_num)
         self.set_page_size(page_size)
+        self.set_extra_context(extra_context)
         return self.page(query)
 
-    def page(self, query: SqlAlchemyQuery) -> ListingResponseType:
+    def page(self, query: SqlAlchemyQuery) -> BasePage:
+        """Return a Page or extended BasePage for given 1-based page number."""
         count: int = self.get_count(query)
         has_next = True if count - (self.page_num * self.page_size) > self.page_size else False
-        query = self.slice_query(query)
-        return ListingResponseType(
+        query = self._slice_query(query)
+        return self._get_page(count, has_next, query)
+
+    def _get_page(self, *args, **kwargs) -> Page:
+        """
+        Return a single page of items
+        this hook can be used by subclasses if you want to
+        replace Page datastructure with your custom structure extending BasePage.
+        """
+        total_count, has_next, query = args
+        return Page(
             hasNext=has_next,
-            totalCount=count,
+            totalCount=total_count,
             currentPageSize=self.page_size,
             currentPageNumber=self.page_num,
             data=query.all())
 
-    def slice_query(self, query: SqlAlchemyQuery):
+    def _slice_query(self, query: SqlAlchemyQuery) -> SqlAlchemyQuery:
+        """
+        Return sliced query.
+
+        This hook can be used by subclasses to slice query in a different manner
+        like using an id range with the help of shared extra_contex
+        or using a more advanced offset technique.
+        """
         return query.limit(self.page_size).offset(max(self.page_num - 1, 0) * self.page_size)

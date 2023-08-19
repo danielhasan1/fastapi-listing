@@ -1,4 +1,5 @@
 from fastapi_listing.middlewares import SessionProvider
+from fastapi_listing.dao import GenericDao
 
 
 class DaoObjectFactory:
@@ -12,7 +13,7 @@ class DaoObjectFactory:
             raise ValueError(f"Dao name {key} already in use with {self._dao[key].__name__}!")
         self._dao[key] = builder
 
-    def create(self, key, *, replica=True, master=False, both=False):
+    def create(self, key, *, replica=True, master=False, both=False) -> GenericDao:
         dao_ = self._dao.get(key)
         if not dao_:
             raise ValueError(key)

@@ -1,6 +1,7 @@
-from typing import TypeVar, List, Dict, Union
+from typing import TypeVar, List, Dict, Union, Sequence
 from typing_extensions import TypedDict
 from fastapi import Request
+from abc import ABC
 
 # will support future imports as well like pymongo and other orm tools
 
@@ -10,19 +11,19 @@ try:
     from sqlalchemy.orm import Session
     from sqlalchemy.sql.sqltypes import TypeEngine
     from sqlalchemy.sql.schema import Column
+    from sqlalchemy.engine.row import Row
 except ImportError:
     DeclarativeMeta = None
     Query = None
     Session = None
     Column = None
+    Row = False
+
+T = TypeVar("T", Row, DeclarativeMeta, Dict)
 
 
-class ListingResponseType(TypedDict):
-    hasNext: bool
-    totalCount: int
-    currentPageSize: int
-    currentPageNumber: int
-    data: List[Dict[str, Union[int, str, list, dict]]]
+class BasePage(TypedDict):
+    data: Sequence[T]
 
 
 SqlAlchemyQuery = TypeVar("SqlAlchemyQuery", bound=Query)
@@ -30,3 +31,12 @@ SqlAlchemySession = TypeVar("SqlAlchemySession", bound=Session)
 FastapiRequest = TypeVar("FastapiRequest", bound=Request)
 AnySqlAlchemyColumn = TypeVar("AnySqlAlchemyColumn", bound=Column)
 SqlAlchemyModel = TypeVar("SqlAlchemyModel", bound=DeclarativeMeta)
+
+# sqlalchemy query objects returns mapper Row or Model object, or if extended user could roughly return a dict
+
+
+class Page(BasePage):
+    hasNext: bool
+    totalCount: int
+    currentPageSize: int
+    currentPageNumber: int

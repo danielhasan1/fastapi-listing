@@ -69,7 +69,7 @@ def test_dao_factory_working():
     from fastapi_listing.dao import dao_factory
     from fastapi_listing.middlewares import manager
     from .dao_setup import TitleDao
-    with manager(read_ses=get_db, master=get_db, implicit_close=True):
+    with manager(read_ses=get_db, master=get_db, implicit_close=True, suppress_warnings=False):
         dao_factory.register_dao("title_2", TitleDao)
         both_dao: TitleDao = dao_factory.create("title_2", both=True)
         assert both_dao.get_emp_title_by_id(10001) == "Senior Engineer"

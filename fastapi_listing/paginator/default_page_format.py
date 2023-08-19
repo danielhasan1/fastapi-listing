@@ -17,8 +17,12 @@ else:
 T = TypeVar('T')
 
 
-class ListingPage(GenericModel, Generic[T]):
+class BaseListingPage(GenericModel, Generic[T]):
+    """Extend this to customise Page format"""
     data: Sequence[T]
+
+
+class ListingPage(BaseListingPage[T], Generic[T]):
     hasNext: bool = Field(alias="hasNext")
     currentPageSize: int = Field(alias="currentPageSize")
     currentPageNumber: int = Field(alias="currentPageNumber")

@@ -10,7 +10,7 @@ from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
     NotRegisteredApiException, FastAPIListingWarning
 from fastapi_listing.factory import interceptor_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
-from fastapi_listing.ctyping import ListingResponseType
+from fastapi_listing.ctyping import BasePage
 from fastapi_listing.utils import HAS_PYDANTIC, BaseModel
 from fastapi_listing.utils import IS_PYDANTIC_V2
 
@@ -104,7 +104,7 @@ class FastapiListing(ListingBase):
         query = launch_mechanics(query)
         return query
 
-    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
+    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> BasePage:
         try:
             raw_params = listing_meta_info.feature_params_adapter.get("pagination")
             page_params = raw_params if raw_params else {"page": 1, "pageSize": listing_meta_info.default_page_size}
@@ -140,11 +140,11 @@ class FastapiListing(ListingBase):
     def _set_vals_in_extra_context(extra_context: dict, **kwargs):
         extra_context.update(kwargs)
 
-    def get_response(self, listing_meta_info: ListingMetaInfo) -> ListingResponseType:
+    def get_response(self, listing_meta_info: ListingMetaInfo) -> BasePage:
         self._set_vals_in_extra_context(listing_meta_info.extra_context,
                                         field_list=self.fields_to_fetch,
                                         custom_fields=self.custom_fields
                                         )
         fnl_query: Query = self._prepare_query(listing_meta_info)
-        response: ListingResponseType = self._paginate(fnl_query, listing_meta_info)
+        response: BasePage = self._paginate(fnl_query, listing_meta_info)
         return response

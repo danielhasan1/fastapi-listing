@@ -54,7 +54,7 @@ def get_db() -> Session:
 
 app = FastAPI()
 # fastapi-listing middleware offering anywhere dao usage policy.
-app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+app.add_middleware(DaoSessionBinderMiddleware, master=get_db, )
 
 
 def get_url_quoted_string(d):
