@@ -30,7 +30,7 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=["tests.*"]),
     package_data={"fastapi_listing": ["py.typed"]},
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
