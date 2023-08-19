@@ -1,6 +1,7 @@
 from contextvars import ContextVar, Token
 from typing import Optional, Callable
 from contextlib import contextmanager
+from warnings import warn
 
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -21,16 +22,18 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
             app: ASGIApp, *,
             master: Callable[[], Session] = None,
             replica: Callable[[], Session] = None,
-            session_close_implicit: bool = False
+            session_close_implicit: bool = False,
+            suppress_warnings: bool = False,
     ):
         super().__init__(app)
         self.close_implicit = session_close_implicit
         self.master = master
         self.read = replica
+        self.suppress_warnings = suppress_warnings
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # TODO: lazy sessions
-        with manager(self.read, self.master, self.close_implicit):
+        with manager(self.read, self.master, self.close_implicit, self.suppress_warnings):
             response = await call_next(request)
         return response
 
@@ -57,14 +60,20 @@ class SessionProvider(metaclass=SessionProviderMeta):
 
 
 @contextmanager
-def manager(read_ses: Callable, master: Callable, implicit_close):
+def manager(read_ses: Callable[[], Session], master: Callable[[], Session], implicit_close: bool,
+            suppress_warnings: bool):
     global _session
     global _replica_session
     if read_ses and master:
         token_read_session: Token = _replica_session.set(read_ses())
         token_master_session: Token = _session.set(master())
     elif master:
-        token_master_session: Token = _session.set(master())
+        sess = master()
+        token_read_session: Token = _replica_session.set(sess)
+        token_master_session: Token = _session.set(sess)
+        if not suppress_warnings:
+            warn("Only 'master' session is provided. dao will use master for read executes."
+                 "To suppress this warning add 'suppress_warnings=True'")
     elif read_ses:
         token_read_session: Token = _replica_session.set(read_ses())
     else:
