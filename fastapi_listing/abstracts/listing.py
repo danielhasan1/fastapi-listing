@@ -67,6 +67,18 @@ class ListingServiceBase(ABC):
     def sorting_strategy(self) -> str:  # type:ignore # noqa
         pass
 
+    @sorting_strategy.setter
+    def sorting_strategy(self, value):
+        pass
+
+    @query_strategy.setter
+    def query_strategy(self, value):
+        pass
+
+    @paginate_strategy.setter
+    def paginating_strategy(self, value):
+        pass
+
     @property
     @abstractmethod
     def sort_mecha(self) -> str:  # type:ignore # noqa

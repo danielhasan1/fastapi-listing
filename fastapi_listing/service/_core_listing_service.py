@@ -113,12 +113,12 @@ class FastapiListing(ListingBase):
             raise FastapiListingRequestSemanticApiException(status_code=422,
                                                             detail="Crap! Pagination went wrong.")
         if page_params["pageSize"] > listing_meta_info.max_page_size:
-            page_params["pageSize"] = listing_meta_info.max_page_size
             warn(f"""requested page size is greater than 'max_page_size', overwriting requested page size
             from {page_params['pageSize']} to {listing_meta_info.max_page_size}""",
                  FastAPIListingWarning,
-                 stacklevel=8,
+                 stacklevel=3,
                  )
+            page_params["pageSize"] = listing_meta_info.max_page_size
 
         page = listing_meta_info.paginating_strategy.paginate(query,
                                                               pagination_params=paginator_params,
