@@ -76,7 +76,7 @@ class ListingServiceBase(ABC):
         pass
 
     @paginate_strategy.setter
-    def paginating_strategy(self, value):
+    def paginate_strategy(self, value):
         pass
 
     @property
