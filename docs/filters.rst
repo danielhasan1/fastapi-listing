@@ -3,11 +3,25 @@
 Adding Filters to your listing API
 ----------------------------------
 
-The most interesting part of a listing that becomes the most hated part of any listing super easily.
+What is a filter❓️
 
-Starting with an easy request.
+Something that a client applies and your API returns filtered data back to the client.
+
+The most interesting part of any listing that becomes the most hated part of any listing super easily due to poorly maintained code causing:
+- performance hiccups
+- hard to read code
+- too many if else to check for what client is asking for
+- modifying existing peice of code which could easily break pre running flows
+- getting unintended data from query because you changed something that shouldn't be touched
+- etc
+
+I can promise you that with FastAPI Listing you can easily reduce such problems with ease.
+
+Lets see how you can power your listing APIs with client filters in easy steps.
 
 Adding a filter that will filter your employee listing on basis of  ``gender``.
+
+Remember :ref:`filter_mapper <filter_mapper_label>` ❓️
 
 .. code-block:: python
     :emphasize-lines: 1, 7
@@ -19,16 +33,41 @@ Adding a filter that will filter your employee listing on basis of  ``gender``.
     class EmployeeListingService(ListingService):
 
         filter_mapper = {
-            "gdr": ("Employee.gender", generic_filters.EqualityFilter),
+            "gender": ("Employee.gender", generic_filters.EqualityFilter),
         }
 
         # rest of the definition is going to be same no change required.
 
-In above example we have imported a module ``generic_filters`` which holds some of the very commonly used query filters supported by FastAPI Listing.
-These are highly reusable and support a cross model in place hook when you may wanna provide secondary model field.
-There are a bunch of filters out of the box to speed up your regular listing API development.😉
+Voila 🎉 you just added your very first filter 🥳
+
+Okay what we did:
+We can define a ``filter_mapper`` that consist of information "on how many fields a client can apply filter,
+and the definition of filter that should be used with that field/column"
+
+In above example we added a filter on our listing API in simple 2 steps:
+
+1️⃣ We have imported a module ``generic_filters`` contains a set of predefined filters. 100% Reusable ♻️
+
+2️⃣ Define your ``filter_mapper`` a dict/mapping where:
+   * key - Exposed to client site. Your client will send filter param against this :ref:`key<alias overview>`
+   * value - ``tuple`` that contains your actual field and definition of filter that will be used to derive your filterd query
+
+And that's it your listing API now supports the ability to filter out data on ``gender``.
 
 
+
+The ``key`` - a user can define on their own accord that will be shared to client and a client will send filter param againts it.
+
+The ``value`` - a  ``tuple`` that will contain 2 mandatory positional values and 1 postional optional value. We will look into that optional value later.
+
+mandatory args - ("<Table.Field>", filterDefinition)
+
+<Table.Field> - identifier should be unique in global scope. Paired with table name as in one database constraint of having only unique table name is upheld.
+Defining identifier like this becomes easy.
+
+filterDefinition - Filter ``class`` used to apply filter on listing query.
+
+Filters shipped with FastAPI Listing to speed up your listing API development.
 
 .. list-table::
    :widths: auto
@@ -67,31 +106,14 @@ There are a bunch of filters out of the box to speed up your regular listing API
      - native date formate range filter between(a,b)
 
 
-I hope you still remember :ref:`filter_mapper <filter_mapper_label>`
-
-Each item of this mapping dict has 3 key components.
-
-1. the key itself which will be sent in remote client request.
-2. The tuple
-    * first item is ``model.field`` -> Field associated to primary table. The filter will be applied on it.
-    * second item is your filter class definition.
-
-And that's it you have successfully implemented your first filter.
-
-
-Several benefits of having an alias over your actual fields as shown in the above dict key.
-1. You will never expose your actual field name to the remote client which help to secure your service.
-2. You will have a more cleaner looking request urls which will only make sense to software developers.
-3. It will trim out the extra information exposing from urls.
-
-How FastAPI Listing reads filter params:
+How filters shipped with FastAPI Listing read params:
 
 * when you have a single value filter - ``[{"field": "alias<(filter mapper dict key)>", "value":{"search":<whatever remote client chose to search>}}]`` 📝
 * when you have multi value filter - ``[{"field": "alias<(filter mapper dict key)>", "value":{"list":<whatever remote client chose to search in list>}}]`` 📝
 * when you have a range value filter - ``[{"field": "alias<(fileter mapper dict key)>", "value":{"start":<whatever remote client chose to search>, "end":<whatever remote client chose to search>}}]`` 📝
 
 **If you have an existing running service that means you already have running remote client setup that will be sending different named query params for filter, then
-use the :ref:`adapter` to make your existing listing service adapt to your existing code.**
+use the :ref:`adapterbenefit<adapter>` to make your existing listing service adapt to your existing code.**
 
 
 Customising your filters

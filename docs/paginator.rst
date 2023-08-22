@@ -26,7 +26,11 @@ any count query.
 Why use alias
 -------------
 
-* Avoid giving away original column names at client level. A steps towards securing and maintaining abstraction at api level.
-* Shorter alias names are light weight. payload looks more friendly.
-* Saves a little bit of bandwidth by saving communicating some extra characters.
-* save coding time with shorter keys.
+In pydantic there is an option of ``alias``. You can actually hide your field names under aliases or replace your actual field names with provided aliases.
+That's a wonderful feature and I use it all the time:
+* to abstract away the actual column names
+* if a field name is too big I choose a light ``alias``
+* helps in lowering network bandwidth
+* language localization
+* you can use names that are natural
+* much more

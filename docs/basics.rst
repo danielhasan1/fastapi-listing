@@ -43,7 +43,7 @@ Each Dao object support two protected (limiting their scope to dao layer only) s
 ``_read_db`` and ``_write_db``
 
 You can use these attributes to communicate with the database. Provides early preparation of when you might need to implement master slave architecture.
-Non master slave arch users can point both of these attributes to same db as well. It's simple.
+Non master slave arch users can point both of these attributes to same db as well. It's simple 1 step process.
 
 Dao class attributes
 ^^^^^^^^^^^^^^^^^^^^
