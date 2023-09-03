@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, Page, BasePage
@@ -32,7 +32,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
         """
         return query.count()
 
-    def is_next_page_exists(self) -> bool | None:
+    def is_next_page_exists(self) -> Union[bool, None]:
         """expression results in bool val if count query allowed else None"""
         if self.fire_count_qry:
             return True if self.count - (self.page_num * self.page_size) > self.page_size else False
@@ -81,7 +81,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
 
     def page(self, query: SqlAlchemyQuery) -> BasePage:
         """Return a Page or BasePage for given 1-based page number."""
-        has_next: bool | None = self.is_next_page_exists()
+        has_next: Union[bool, None] = self.is_next_page_exists()
         query = self._slice_query(query)
         return self._get_page(has_next, query)
 

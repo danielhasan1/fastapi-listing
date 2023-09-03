@@ -36,7 +36,7 @@ SqlAlchemyModel = TypeVar("SqlAlchemyModel", bound=DeclarativeMeta)
 
 
 class Page(BasePage):
-    hasNext: bool | None  # None tells that we've turned off means to calculate this result due to absence of totalCount
+    hasNext: Union[bool, None]  # None tells that we've turned off means to calculate this result due to absence of totalCount
     totalCount: int
     currentPageSize: int
     currentPageNumber: int
