@@ -43,5 +43,5 @@ class SortingOrderStrategy(AbsSortingStrategy):
                 inst_field = None
             if inst_field is None:
                 raise ValueError(
-                    f"Provided sort field is not an attribute of {model.__name__}")  # todo improve this by custom exception
+                    f"Provided sort field {field!r} is not an attribute of {model.__name__}")  # todo improve this by custom exception
         return inst_field

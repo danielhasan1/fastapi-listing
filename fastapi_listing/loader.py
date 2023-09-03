@@ -5,20 +5,9 @@ from fastapi_listing.factory import filter_factory, _generic_factory, strategy_f
 from fastapi_listing.errors import MissingExpectedAttribute
 from fastapi_listing.dao import GenericDao
 
-# import logging
-#
-# logger = logging.getLogger()
-# # fhandler = logging.FileHandler(filename=r"C:\Users\danis\dev\test.log", mode='a')
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# # fhandler.setFormatter(formatter)
-# # logger.addHandler(fhandler)
-# logger.setLevel(logging.DEBUG)
-
-
-# FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
-# logging.basicConfig(format=FORMAT)
-# d = {'clientip': '192.168.0.1', 'user': 'fbloggs'}
-# logger = logging.getLogger('tcpserver')
+__all__ = [
+    "register"
+]
 
 
 def _validate_strategy_attributes(cls: ListingService):

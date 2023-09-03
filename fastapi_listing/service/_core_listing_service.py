@@ -4,15 +4,16 @@ from warnings import warn
 from fastapi import Request
 from sqlalchemy.orm import Query
 
-from fastapi_listing.abstracts import ListingBase
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
     NotRegisteredApiException, FastAPIListingWarning
-from fastapi_listing.factory import interceptor_factory
+from fastapi_listing.factory import interceptor_factory, strategy_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import BasePage
 from fastapi_listing.utils import HAS_PYDANTIC, BaseModel
 from fastapi_listing.utils import IS_PYDANTIC_V2
+from fastapi_listing.service.config import ListingMetaData
+from fastapi_listing.abstracts import ListingBase
 
 
 class FastapiListing(ListingBase):
@@ -29,9 +30,9 @@ class FastapiListing(ListingBase):
     extend this class outside.
     """
 
-    def __init__(self, request: Request = None, dao: GenericDao = None,
+    def __init__(self, request: Optional[Request] = None, dao: GenericDao = None,
                  *, pydantic_serializer: Optional[Type[BaseModel]] = None,
-                 fields_to_fetch: List[str] = None,
+                 fields_to_fetch: Optional[List[str]] = None,
                  custom_fields: Optional[bool] = False) -> None:
         self.request = request
         self.dao = dao
@@ -106,7 +107,7 @@ class FastapiListing(ListingBase):
 
     def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> BasePage:
         try:
-            raw_params = listing_meta_info.feature_params_adapter.get("pagination")
+            raw_params: List[dict] = listing_meta_info.feature_params_adapter.get("pagination")
             page_params = raw_params if raw_params else {"page": 1, "pageSize": listing_meta_info.default_page_size}
             paginator_params: dict = page_params
         except Exception:
@@ -140,11 +141,43 @@ class FastapiListing(ListingBase):
     def _set_vals_in_extra_context(extra_context: dict, **kwargs):
         extra_context.update(kwargs)
 
-    def get_response(self, listing_meta_info: ListingMetaInfo) -> BasePage:
-        self._set_vals_in_extra_context(listing_meta_info.extra_context,
+    def _build_from_meta_data(self, meta_data: ListingMetaData) -> ListingMetaInfo:
+
+        class MetaInfo:
+
+            def __init__(self, outer_instance):
+                """
+                @rtype: ListingMetaInfo
+                """
+                self.filter_column_mapper = meta_data["filter_mapper"]
+                self.query_strategy = strategy_factory.create(meta_data["query_strategy"])
+                self.sorting_column_mapper = meta_data["sort_mapper"]
+                self.default_sort_val = dict(type=meta_data["default_srt_ord"],
+                                             field=meta_data["default_srt_on"])
+                self.sorting_strategy = strategy_factory.create(
+                    meta_data["sorting_strategy"],
+                    model=outer_instance.dao.model,
+                    request=outer_instance.request,
+                )
+                self.sorter_mechanic = meta_data["sort_mecha"]
+                self.filter_mechanic = meta_data["filter_mecha"]
+                self.extra_context = meta_data["extra_context"]
+                feature_param_class = meta_data["feature_params_adapter"]
+                self.feature_params_adapter = feature_param_class(outer_instance.request, self.extra_context)
+                self.default_page_size = meta_data["default_page_size"]
+                self.max_page_size = meta_data["max_page_size"]
+                self.fire_count_qry = meta_data["allow_count_query_by_paginator"]
+                self.paginating_strategy = strategy_factory.create(
+                    meta_data["paginating_strategy"], request=outer_instance.request, fire_count_qry=self.fire_count_qry)
+
+        return MetaInfo(self)  # type: ignore
+
+    def get_response(self, listing_meta_data: ListingMetaData) -> BasePage:
+        self._set_vals_in_extra_context(listing_meta_data["extra_context"],
                                         field_list=self.fields_to_fetch,
                                         custom_fields=self.custom_fields
                                         )
+        listing_meta_info = self._build_from_meta_data(listing_meta_data)
         fnl_query: Query = self._prepare_query(listing_meta_info)
         response: BasePage = self._paginate(fnl_query, listing_meta_info)
         return response

@@ -17,7 +17,7 @@ def test_strategy_factory_unique_strategy_register():
 def test_filter_factory_unique_strategy_register():
     with pytest.raises(ValueError) as e:
         spawn_valueerror_for_filter_factory("same_field_name", "same_field_name")
-    assert e.value.args[0] == "filter name already in use with EqualityFilter!"
+    assert e.value.args[0] == "filter key 'same_field_name' already in use with 'EqualityFilter'"
 
 
 def test_factory_key_inputs():
@@ -61,6 +61,10 @@ def test_dao_factory_errors():
         e.g.
         callable -> get_db
         app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+        or
+        pass a db session manually to your listing service
+        e.g.
+        AbcListingService(read_db=sqlalchemysession)
         """
 
 

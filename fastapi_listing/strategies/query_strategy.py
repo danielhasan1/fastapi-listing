@@ -1,6 +1,8 @@
+from typing import Optional
+
 from fastapi_listing.abstracts import AbsQueryStrategy
 from fastapi_listing.dao import GenericDao
-from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
+from fastapi import Query, Request
 
 
 class QueryStrategy(AbsQueryStrategy):
@@ -23,8 +25,8 @@ class QueryStrategy(AbsQueryStrategy):
             inst_fields = [getattr(dao.model, field) for field in field_list]
         return inst_fields
 
-    def get_query(self, *, request: FastapiRequest = None, dao: GenericDao = None,
-                  extra_context: dict = None) -> SqlAlchemyQuery:
+    def get_query(self, *, request: Optional[Request] = None, dao: GenericDao = None,
+                  extra_context: dict = None) -> Query:
         inst_fields = self.get_inst_attr_to_read(extra_context.get("custom_fields"), extra_context.get("field_list"),
                                                  dao)
         query = dao.get_default_read(inst_fields)

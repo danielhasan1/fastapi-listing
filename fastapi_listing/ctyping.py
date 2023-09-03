@@ -1,4 +1,4 @@
-from typing import TypeVar, List, Dict, Union, Sequence
+from typing import TypeVar, List, Dict, Union, Sequence, Generic
 from typing_extensions import TypedDict
 from fastapi import Request
 from abc import ABC
@@ -19,7 +19,7 @@ except ImportError:
     Column = None
     Row = False
 
-T = TypeVar("T", Row, DeclarativeMeta, Dict)
+T = TypeVar("T")
 
 
 class BasePage(TypedDict):
@@ -36,7 +36,7 @@ SqlAlchemyModel = TypeVar("SqlAlchemyModel", bound=DeclarativeMeta)
 
 
 class Page(BasePage):
-    hasNext: bool
+    hasNext: bool | None  # None tells that we've turned off means to calculate this result due to absence of totalCount
     totalCount: int
     currentPageSize: int
     currentPageNumber: int

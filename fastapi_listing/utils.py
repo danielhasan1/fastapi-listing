@@ -14,5 +14,5 @@ try:
 except ImportError:
     HAS_PYDANTIC = False
     BaseModel: Optional[Type] = None
-    VERSION = None
+    VERSION = ""
     IS_PYDANTIC_V2 = None

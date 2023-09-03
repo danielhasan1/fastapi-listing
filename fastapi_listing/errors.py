@@ -35,6 +35,10 @@ class MissingSessionError(Exception):
         e.g.
         callable -> get_db
         app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
+        or
+        pass a db session manually to your listing service
+        e.g.
+        AbcListingService(read_db=sqlalchemysession)
         """
         super().__init__(msg)
 
