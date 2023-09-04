@@ -2,7 +2,12 @@ try:
     from typing import Protocol
 except ImportError:
     from typing_extensions import Protocol
-from typing import Dict, Literal, Type, TypedDict
+from typing import Dict, Type, TypedDict
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from fastapi_listing.abstracts import (AbsSortingStrategy, AbsPaginatingStrategy, AbsQueryStrategy,
                                        AbstractListingFeatureParamsAdapter)

@@ -1,13 +1,14 @@
+__all__ = [
+    "register"
+]
+
+
 import inspect
 
 from fastapi_listing.service import ListingService
 from fastapi_listing.factory import filter_factory, _generic_factory, strategy_factory, interceptor_factory
 from fastapi_listing.errors import MissingExpectedAttribute
 from fastapi_listing.dao import GenericDao
-
-__all__ = [
-    "register"
-]
 
 
 def _validate_strategy_attributes(cls: ListingService):

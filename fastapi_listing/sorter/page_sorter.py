@@ -6,8 +6,6 @@ from fastapi_listing.factory import _generic_factory
 
 class SortingOrderStrategy(AbsSortingStrategy):
 
-    name = "default_sorter"
-
     def __init__(self, model: SqlAlchemyModel = None, request: FastapiRequest = None):
         self.model = model
         self.request = request

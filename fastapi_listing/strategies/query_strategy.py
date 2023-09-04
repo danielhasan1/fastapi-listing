@@ -6,8 +6,7 @@ from fastapi import Query, Request
 
 
 class QueryStrategy(AbsQueryStrategy):
-
-    name = "default_query"
+    """Default query strategy class. Generates a simple query with requested fields from same model."""
 
     def get_inst_attr_to_read(self, custom_fields: bool, field_list: list, dao: GenericDao):
         inst_fields = []

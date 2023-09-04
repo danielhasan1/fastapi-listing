@@ -1,24 +1,101 @@
-from typing import Literal, Optional, TypedDict, Type
+from typing import Optional, TypedDict, Type
 
-# from fastapi_listing.interface.listing_meta_info import ListingMetaData
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 from fastapi_listing.service.adapters import CoreListingParamsAdapter
 
 
 class ListingMetaData(TypedDict):
+    """A Typedict for configuring fastapi-listing behaviour"""
+
     filter_mapper: dict
+    """
+    The filter_mapper is a collection of allowed filters on listing that will be used by consumers. Defaults to '{}'
+    """
+
     sort_mapper: dict
-    default_srt_ord: Literal["asc", "dsc"]
+    """
+    The sort_mapper is a collection of fields allowed to be used for sort on listing that will be used by consumer.
+    Defaults to '{}'
+    """
+
     default_srt_on: str
+    """primary model field that will be used to sort the listing response by default. No Default value provided."""
+
+    default_srt_ord: Literal["asc", "dsc"]
+    """The default order which will be used to return listing response. Defaults to 'dsc' """
+
     paginating_strategy: str
+    """
+    Reference of strategy class used to paginate listing response. Must be registered with strategy_factory.
+    Defaults to 'default_paginator'
+    """
+
     query_strategy: str
+    """
+    Reference of strategy class used to generate listing query object. Must be registered with strategy_factory.
+    Defaults to 'default_query'
+    """
+
     sorting_strategy: str
+    """
+    Reference of strategy class used to apply sorting on query object. Must be registered with strategy_factory.
+    Defaults to 'default_sorter'
+    """
+
     sort_mecha: str
+    """
+    Reference of interceptor class that applies sorting requested by client utilising sort_mapper.
+    Must be registered with interceptor_factory.
+    Defaults to 'indi_sorter_interceptor'
+    """
+
     filter_mecha: str
+    """
+    Reference of interceptor class that applies filter requested by client utilising filter_mapper.
+    Must be registered with interceptor factory.
+    Defaults to 'iterative_filter_interceptor'
+    """
+
     default_page_size: int
+    """The default number of items that a page should contain. Defaults to '10' """
+
     max_page_size: int
+    """
+    Maximum number of items that a page should contain. Ignore any upper page size limit than this.
+    Defaults to '50'
+    """
+
     feature_params_adapter: Type[CoreListingParamsAdapter]
+    """
+    Reference of the adapter class used to get listing feature(filter/sorter/paginator) parameters.
+    Lets users make fastapi-listing adapt to their current code base.
+    Defaults to 'CoreListingParamsAdapter'
+    """
+
     allow_count_query_by_paginator: bool
+    """
+    Restrict/Allow fastapi-listing default paginator to extract total count. This lets you avoid slow
+    count queries on big table to avoid performance hiccups.
+    Defaults to 'True'
+    """
+
     extra_context: dict
+    """
+    A common datastructure used to store any context data that a user may wanna pass from router.
+    Like path params or query params or anything.
+    Available throughout the entire fastapi-listing lifespan.
+    User can access it in
+    strategies
+    interceptors
+    filters
+    or almost anywhere in their code where they are writing their listing API dependency using/extending fastapi-listing
+    core features.
+    Defaults to '{}'
+    """
 
 
 def MetaInfo(

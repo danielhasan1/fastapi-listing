@@ -1,4 +1,9 @@
-from typing import Literal, Optional, List
+from typing import Optional, List
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from fastapi import Request
 
