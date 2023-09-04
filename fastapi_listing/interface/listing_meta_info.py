@@ -2,7 +2,7 @@ try:
     from typing import Protocol
 except ImportError:
     from typing_extensions import Protocol
-from typing import Dict, Type, TypedDict
+from typing import Dict
 
 try:
     from typing import Literal

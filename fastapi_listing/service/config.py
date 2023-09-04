@@ -1,9 +1,9 @@
-from typing import Optional, TypedDict, Type
+from typing import Optional, Type
 
 try:
-    from typing import Literal
+    from typing import Literal, TypedDict
 except ImportError:
-    from typing_extensions import Literal
+    from typing_extensions import Literal, TypedDict
 
 from fastapi_listing.service.adapters import CoreListingParamsAdapter
 
