@@ -113,7 +113,7 @@ def MetaInfo(
         max_page_size: int = 50,
         feature_params_adapter=CoreListingParamsAdapter,
         allow_count_query_by_paginator: bool = True,
-        **kwargs) -> ListingMetaData:
+        **extra) -> ListingMetaData:
     """validate passed args"""
     if default_srt_ord not in ["asc", "dsc"]:
         raise ValueError(f"default_srt_ord is incorrect expected 'Literal['asc', 'dsc']' got {default_srt_ord!r}")
@@ -121,7 +121,7 @@ def MetaInfo(
         filter_mapper = dict()
     if not sort_mapper:
         sort_mapper = dict()
-    extra_context = kwargs or dict()
+    extra_context = extra or dict()
     return ListingMetaData(filter_mapper=filter_mapper,
                            sort_mapper=sort_mapper,
                            default_srt_ord=default_srt_ord,

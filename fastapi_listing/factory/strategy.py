@@ -1,4 +1,5 @@
-from typing import Type, TypeVar, get_args, Union
+from typing_extensions import get_args
+from typing import Type, TypeVar, Union
 
 from fastapi_listing.abstracts import AbsQueryStrategy, AbsSortingStrategy, AbsPaginatingStrategy
 
