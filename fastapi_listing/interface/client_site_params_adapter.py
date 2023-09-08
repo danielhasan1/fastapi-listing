@@ -8,5 +8,5 @@ from typing import List
 
 class ClientSiteParamAdapter(Protocol):
 
-    def get(self, key: str) -> List[dict]:
+    def get(self, key: str):
         pass

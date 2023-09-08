@@ -4,21 +4,16 @@ except ImportError:
     from typing_extensions import Protocol
 from typing import Dict
 
-from fastapi_listing.abstracts import AbsSortingStrategy, AbsPaginatingStrategy, AbsQueryStrategy
-from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+from fastapi_listing.abstracts import (AbsSortingStrategy, AbsPaginatingStrategy, AbsQueryStrategy,
+                                       AbstractListingFeatureParamsAdapter)
 
 
 class ListingMetaInfo(Protocol):
-    # paginating_strategy: AbsPaginatingStrategy
-    # query_strategy: AbsQueryStrategy
-    # sorting_column_mapper: dict
-    # filter_column_mapper: dict
-    # sorting_strategy: AbsSortingStrategy
-    # default_sort_val: Dict[str, str]
-    # sorter_mechanic: str
-    # filter_mechanic: str
-    # extra_context: dict
-    # params_adapter: ClientSiteParamAdapter
 
     @property
     def paginating_strategy(self) -> AbsPaginatingStrategy:  # type : ignore  # noqa
@@ -41,7 +36,7 @@ class ListingMetaInfo(Protocol):
         ...
 
     @property
-    def default_sort_val(self) -> Dict[str, str]:  # type:ignore # noqa
+    def default_sort_val(self) -> Dict[str, Literal["asc", "dsc"]]:  # type:ignore # noqa
         ...
 
     @property
@@ -57,7 +52,7 @@ class ListingMetaInfo(Protocol):
         ...
 
     @property
-    def feature_params_adapter(self) -> ClientSiteParamAdapter:  # noqa
+    def feature_params_adapter(self) -> AbstractListingFeatureParamsAdapter:  # noqa
         ...
 
     @property
@@ -67,3 +62,7 @@ class ListingMetaInfo(Protocol):
     @property
     def max_page_size(self) -> int:  # noqa
         ...
+
+    @property
+    def fire_count_qry(self) -> bool: # noqa
+        pass

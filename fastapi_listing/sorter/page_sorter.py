@@ -6,8 +6,6 @@ from fastapi_listing.factory import _generic_factory
 
 class SortingOrderStrategy(AbsSortingStrategy):
 
-    name = "default_sorter"
-
     def __init__(self, model: SqlAlchemyModel = None, request: FastapiRequest = None):
         self.model = model
         self.request = request
@@ -43,5 +41,5 @@ class SortingOrderStrategy(AbsSortingStrategy):
                 inst_field = None
             if inst_field is None:
                 raise ValueError(
-                    f"Provided sort field is not an attribute of {model.__name__}")  # todo improve this by custom exception
+                    f"Provided sort field {field!r} is not an attribute of {model.__name__}")  # todo improve this by custom exception
         return inst_field

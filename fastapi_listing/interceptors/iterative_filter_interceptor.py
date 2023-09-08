@@ -1,8 +1,8 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from fastapi_listing.abstracts import AbstractFilterInterceptor
 from fastapi_listing.factory import filter_factory
-from fastapi_listing.filters import CommonFilterImpl
+from fastapi_listing.filters.generic_filters import CommonFilterImpl
 from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
 
 
@@ -22,10 +22,8 @@ class IterativeFilterInterceptor(AbstractFilterInterceptor):
     with other relative filters then don't apply other relative filters...
     """
 
-    name = "iterative_filter_interceptor"
-
     def apply(self, *, query: SqlAlchemyQuery = None, filter_params: List[Dict[str, str]], dao=None,
-              request: FastapiRequest = None, extra_context: dict = None) -> SqlAlchemyQuery:
+              request: Optional[FastapiRequest] = None, extra_context: dict = None) -> SqlAlchemyQuery:
         for applied_filter in filter_params:
             filter_obj: CommonFilterImpl = filter_factory.create(applied_filter.get("field"),
                                                                  dao=dao,

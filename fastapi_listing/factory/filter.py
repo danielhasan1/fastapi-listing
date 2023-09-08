@@ -15,7 +15,7 @@ class FilterObjectFactory:
         if key is None or not key:
             raise ValueError("Invalid type key!")
         if key in self._filters:
-            raise ValueError(f"filter name already in use with {self._filters[key][0].__name__}!")
+            raise ValueError(f"filter key {key!r} already in use with {self._filters[key][0].__name__!r}")
         self._filters[key] = (builder, field_extractor_fn)
 
     def is_mapper_semantic_valid(self, mapper_val):

@@ -1,5 +1,27 @@
-from typing import Callable
+__all__ = [
+    "CommonFilterImpl",
+    "EqualityFilter",
+    "InEqualityFilter",
+    "InDataFilter",
+    "BetweenUnixMilliSecDateFilter",
+    "StringStartsWithFilter",
+    "StringEndsWithFilter",
+    "StringContainsFilter",
+    "StringLikeFilter",
+    "DataGreaterThanFilter",
+    "DataGreaterThanEqualToFilter",
+    "DataLessThanFilter",
+    "DataLessThanEqualToFilter",
+    "DataGropByElementFilter",
+    "DataDistinctByElementFilter",
+    "HasFieldValue",
+    "MySqlNativeDateFormateRangeFilter",
+]
+
+from typing import Callable, Optional
 from datetime import datetime
+
+from fastapi import Request
 
 from fastapi_listing.abstracts import FilterAbstract
 from fastapi_listing.ctyping import SqlAlchemyQuery, AnySqlAlchemyColumn
@@ -7,8 +29,8 @@ from fastapi_listing.ctyping import SqlAlchemyQuery, AnySqlAlchemyColumn
 
 class CommonFilterImpl(FilterAbstract):
 
-    def __init__(self, dao=None, request=None, *, extra_context=None,
-                 field_extract_fn: Callable[[str], AnySqlAlchemyColumn] = None):
+    def __init__(self, dao=None, request: Optional[Request] = None, *, extra_context: dict,
+                 field_extract_fn: Callable[[str], AnySqlAlchemyColumn]):
         # lambda x: getattr(Model, x)
         self.dao = dao
         self.request = request

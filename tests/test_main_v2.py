@@ -296,7 +296,7 @@ def test_sorting_error():
     with pytest.raises(ValueError) as e:
         client.get("/v1/error-sorting",
                    params={"sort": get_url_quoted_string([{"field": "hdt", "type": "asc"}])})
-    assert e.value.args[0] == "Provided sort field is not an attribute of DeptEmp"
+    assert e.value.args[0] == "Provided sort field 'hire_date' is not an attribute of DeptEmp"
 
 
 def test_core_service_exceptions():

@@ -1,3 +1,5 @@
+__all__ = ['DaoSessionBinderMiddleware']
+
 from contextvars import ContextVar, Token
 from typing import Optional, Callable
 from contextlib import contextmanager

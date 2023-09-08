@@ -1,3 +1,5 @@
+__all__ = ['dictify_query_params']
+
 import json
 from urllib.parse import unquote
 from typing import Union, List, Optional, Type
@@ -14,5 +16,5 @@ try:
 except ImportError:
     HAS_PYDANTIC = False
     BaseModel: Optional[Type] = None
-    VERSION = None
+    VERSION = ""
     IS_PYDANTIC_V2 = None

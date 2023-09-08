@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 from fastapi_listing.abstracts import AbsPaginatingStrategy
 from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, Page, BasePage
 from fastapi_listing.errors import ListingPaginatorError
@@ -12,13 +14,13 @@ class PaginationStrategy(AbsPaginatingStrategy):
     their needs or having a different response structure.
     """
 
-    name = "default_paginator"
-
-    def __init__(self, request: FastapiRequest):
+    def __init__(self, request: Optional[FastapiRequest] = None, fire_count_qry: bool = True):
         self.request = request
         self.page_num = 0
         self.page_size = 0
+        self.count = 0
         self.extra_context = None
+        self.fire_count_qry = fire_count_qry
 
     def get_count(self, query: SqlAlchemyQuery) -> int:
         """
@@ -29,6 +31,12 @@ class PaginationStrategy(AbsPaginatingStrategy):
         like returning a massive dummy count and then depending upon empty main_data avoiding trip to next page etc.
         """
         return query.count()
+
+    def is_next_page_exists(self) -> Union[bool, None]:
+        """expression results in bool val if count query allowed else None"""
+        if self.fire_count_qry:
+            return True if self.count - (self.page_num * self.page_size) > self.page_size else False
+        return None
 
     def validate_params(self, page_num, page_size):
         """validate given 1 based page number and pagesize"""
@@ -52,7 +60,11 @@ class PaginationStrategy(AbsPaginatingStrategy):
     def set_extra_context(self, extra_context):
         self.extra_context = extra_context
 
+    def set_count(self, count: int):
+        self.count = count
+
     def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> BasePage:
+        """Retrun paginated response"""
         page_num = pagination_params.get('page')
         page_size = pagination_params.get('pageSize')
         try:
@@ -63,22 +75,27 @@ class PaginationStrategy(AbsPaginatingStrategy):
         self.set_page_num(page_num)
         self.set_page_size(page_size)
         self.set_extra_context(extra_context)
+        if self.fire_count_qry:
+            self.set_count(self.get_count(query))
         return self.page(query)
 
     def page(self, query: SqlAlchemyQuery) -> BasePage:
-        """Return a Page or extended BasePage for given 1-based page number."""
-        count: int = self.get_count(query)
-        has_next = True if count - (self.page_num * self.page_size) > self.page_size else False
+        """Return a Page or BasePage for given 1-based page number."""
+        has_next: Union[bool, None] = self.is_next_page_exists()
         query = self._slice_query(query)
-        return self._get_page(count, has_next, query)
+        return self._get_page(has_next, query)
 
     def _get_page(self, *args, **kwargs) -> Page:
         """
         Return a single page of items
         this hook can be used by subclasses if you want to
         replace Page datastructure with your custom structure extending BasePage.
+        or
+        restricted count query execution and deduce has_next page on basis of current sequence length
+        for example: page size is 10 but len(page) < 10 so no next page exists.
         """
-        total_count, has_next, query = args
+        has_next, query = args
+        total_count = self.count
         return Page(
             hasNext=has_next,
             totalCount=total_count,

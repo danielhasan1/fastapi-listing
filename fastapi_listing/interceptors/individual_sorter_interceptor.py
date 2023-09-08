@@ -18,8 +18,6 @@ class IndiSorterInterceptor(AbstractSorterInterceptor):
         # conditional sorting where if one param is applied then don't apply another specific one, etc.
     """
 
-    name = "indi_sorter_interceptor"
-
     def apply(self, *, query: SqlAlchemyQuery = None, strategy: SortingOrderStrategy = None,
               sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:
         latest = sorting_params[-1]

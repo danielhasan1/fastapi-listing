@@ -39,8 +39,6 @@ class EmployeeListDetails(BaseModel):
 class EmployeeListDetailWithCustomFields(EmployeeListDetails):
     first_name: str = Field(alias="fnm", title="First Name", exclude=True)
     last_name: str = Field(alias="lnm", title="Last Name", exclude=True)
-    if not IS_PYDANTIC_V2:
-        full_name: str = Field('', alias="flnm")
 
     if IS_PYDANTIC_V2:
         @computed_field(alias="flnm")
@@ -51,6 +49,8 @@ class EmployeeListDetailWithCustomFields(EmployeeListDetails):
             return full_name
 
     else:
+        full_name: str = Field('', alias="flnm")
+
         @validator('full_name', pre=True, always=True)
         def generate_full_name(cls, v, values) -> str:
             return f"{values.pop('first_name')} {values.pop('last_name')}"

@@ -1,11 +1,23 @@
+from typing import Optional
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 from fastapi import Request
 
 from fastapi_listing.abstracts import ListingServiceBase
 from fastapi_listing.dao.generic_dao import GenericDao
-from fastapi_listing.factory import strategy_factory
 from fastapi_listing.dao import dao_factory
 from fastapi_listing.service.adapters import CoreListingParamsAdapter
-from fastapi_listing.interface.client_site_params_adapter import ClientSiteParamAdapter
+from fastapi_listing.errors import MissingSessionError
+from fastapi_listing.service.config import ListingMetaData
+
+
+__all__ = [
+    "ListingService"
+]
 
 
 class ListingService(ListingServiceBase):  # noqa
@@ -14,7 +26,7 @@ class ListingService(ListingServiceBase):  # noqa
     # here resource creation should be based on factory and not inline as we are separating creation from usage.
     # factory should deliver sorting resource
     # default_srt_on: str = "created_at" # to be taken by user at child class level
-    default_srt_ord: str = "dsc"
+    default_srt_ord: Literal["asc", "dsc"] = "dsc"
     paginate_strategy: str = "default_paginator"
     query_strategy: str = "default_query"
     sorting_strategy: str = "default_sorter"
@@ -23,7 +35,8 @@ class ListingService(ListingServiceBase):  # noqa
     default_page_size: int = 10
     max_page_size: int = 50
     default_dao: GenericDao = GenericDao
-    feature_params_adapter: ClientSiteParamAdapter = CoreListingParamsAdapter
+    feature_params_adapter = CoreListingParamsAdapter
+    allow_count_query_by_paginator: bool = True
 
     # pydantic_serializer: Type[BaseModel] = None
     # allowed_pydantic_custom_fields: bool = False
@@ -32,10 +45,20 @@ class ListingService(ListingServiceBase):  # noqa
     # flexibility for the user to be able to switch between schema Fastapilisting object
     # should get initialized at user level and not implicit.
 
-    def __init__(self, request: Request, **kwargs) -> None:
+    def __init__(self, request: Optional[Request] = None,
+                 *,
+                 read_db=None,
+                 write_db=None,
+                 **kwargs) -> None:
         self.request = request
         self.extra_context = kwargs
-        self.dao: ListingService.default_dao = dao_factory.create(self.default_dao.name)
+        try:
+            dao = dao_factory.create(self.default_dao.name)
+        except MissingSessionError:
+            if not read_db:
+                raise MissingSessionError
+            dao = self.default_dao(read_db=read_db, write_db=write_db)
+        self.dao = dao
 
     def get_listing(self):
         """
@@ -61,24 +84,19 @@ class ListingService(ListingServiceBase):  # noqa
         """
         raise NotImplementedError("method should be implemented in child class and not here!")
 
-    class MetaInfo:
-
-        def __init__(self, outer_instance):
-            self.paginating_strategy = strategy_factory.create(
-                outer_instance.paginate_strategy, request=outer_instance.request)
-            self.filter_column_mapper = outer_instance.filter_mapper
-            self.query_strategy = strategy_factory.create(outer_instance.query_strategy)
-            self.sorting_column_mapper = outer_instance.sort_mapper
-            self.default_sort_val = dict(type=outer_instance.default_srt_ord,
-                                         field=outer_instance.default_srt_on)
-            self.sorting_strategy = strategy_factory.create(
-                outer_instance.sorting_strategy,
-                model=outer_instance.dao.model,
-                request=outer_instance.request,
-            )
-            self.sorter_mechanic = outer_instance.sort_mecha
-            self.filter_mechanic = outer_instance.filter_mecha
-            self.extra_context = outer_instance.extra_context
-            self.feature_params_adapter = outer_instance.feature_params_adapter(outer_instance.request)
-            self.default_page_size = outer_instance.default_page_size
-            self.max_page_size = outer_instance.max_page_size
+    def MetaInfo(self, self_copy):
+        """to support older versions"""
+        return ListingMetaData(filter_mapper=self.filter_mapper,  # type: ignore
+                               sort_mapper=self.sort_mapper,
+                               default_srt_ord=self.default_srt_ord,
+                               default_srt_on=self.default_srt_on,
+                               paginating_strategy=self.paginate_strategy,
+                               query_strategy=self.query_strategy,
+                               sorting_strategy=self.sorting_strategy,
+                               sort_mecha=self.sort_mecha,
+                               filter_mecha=self.filter_mecha,
+                               default_page_size=self.default_page_size,
+                               max_page_size=self.max_page_size,
+                               feature_params_adapter=self.feature_params_adapter,
+                               allow_count_query_by_paginator=self.allow_count_query_by_paginator,
+                               extra_context=self.extra_context)
