@@ -22,8 +22,6 @@ class IterativeFilterInterceptor(AbstractFilterInterceptor):
     with other relative filters then don't apply other relative filters...
     """
 
-    name = "iterative_filter_interceptor"
-
     def apply(self, *, query: SqlAlchemyQuery = None, filter_params: List[Dict[str, str]], dao=None,
               request: Optional[FastapiRequest] = None, extra_context: dict = None) -> SqlAlchemyQuery:
         for applied_filter in filter_params:
