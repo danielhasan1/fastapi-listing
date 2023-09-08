@@ -93,7 +93,7 @@ Your pydantic class contains some dynamic fields that you populate at runtime❓
 ```python
 @app.get("/employees", response_model=ListingPage[EmployeeListDetails])
 def get_employees(db=Depends(get_db)):
-    
+    dao = EmployeeDao(read_db=db)
     return FastapiListing(dao=dao,
                           pydantic_serializer=EmployeeListDetails, # optional
                           custom_fields=True # just tell fastapi-listing that your model contains custom_fields
@@ -122,6 +122,7 @@ class EmployeeDao(GenericDao):
 ```python
 @app.get("/employees", response_model=ListingPage[EmployeeListDetails])
 def get_employees(db=Depends(get_db)):
+    dao = EmployeeDao(read_db=db)
     return FastapiListing(dao=dao).get_response(MetaInfo(default_srt_on="emp_no"))
 ```
 
@@ -153,6 +154,7 @@ def get_employees(request: Request, db=Depends(get_db)):
     you can pass filter query_param or use request object.
     make fastapi-listing adapt to your client existing query_param format
     """
+    dao = EmployeeDao(read_db=db)
     return FastapiListing(request=request, dao=dao).get_response(
         MetaInfo(default_srt_on="emp_no", filter_mapper=emp_filter_mapper))
     
@@ -214,6 +216,7 @@ def get_employees(request: Request, db=Depends(get_db)):
     params = request.query_params
     # filter, sort. pagination = params.get("filter"), params.get("sort"), params.get("paginator")
     # you can pass above args as kwargs in MetaInfo
+    dao = EmployeeDao(read_db=db)
     return FastapiListing(request=request, dao=dao).get_response(
         MetaInfo(default_srt_on="emp_no", filter_mapper=emp_filter_mapper, feature_params_adapter=YourAdapterClass))
     
@@ -232,6 +235,7 @@ def get_employees(request: Request, db=Depends(get_db)):
         "cd": "Employee.emp_no",
         "bdt": "Employee.birth_date"
     }
+    dao = EmployeeDao(read_db=db)
     return FastapiListing(request=request, dao=dao).get_response(
         MetaInfo(default_srt_on="emp_no", filter_mapper=emp_filter_mapper, feature_params_adapter=YourAdapterClass,
                  sort_mapper=emp_sort_mapper))
