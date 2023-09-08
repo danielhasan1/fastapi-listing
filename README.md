@@ -21,15 +21,14 @@ Comes with:
 
 ## Usage
 
-➡️ The New Compact Version(Older version was provided with a guide style which is supported by this version as well)
-
-Create your listing API in 2 easy steps 🥳
+➡️ With the New Compact Version(Older version was provided with a guide style which is supported by this version as well)
+create your listing API in 2 easy steps 🥳
 
 1️⃣ Create a Dao (Data Access Object) layer (a simple class)
 
 ```python
 from fastapi_listing.dao import GenericDao
-
+from app.model import Employee
 
 
 # your dao (data access object) placed here for the sake of example
@@ -62,6 +61,7 @@ def get_db() -> Session:
 
 
 # your pydantic response class if you are using one
+# Supports pydantic v2
 class EmployeeListDetails(BaseModel):
     emp_no: int = Field(alias="empid", title="Employee ID")
     birth_date: date = Field(alias="bdt", title="Birth Date")
@@ -158,7 +158,7 @@ def get_employees(request: Request, db=Depends(get_db)):
     
 ```
 
-How fastapi-listing reads filter/sorter/paginator params❓️
+Thinking about how fastapi-listing reads filter/sorter/paginator params❓️
 
 ```python
 # Extend adapter to make fastapi-listing adapt your existing clients
@@ -203,8 +203,7 @@ class YourAdapterClass(CoreListingParamsAdapter): # Extend to add your behaviour
         @return: List[Optional[dict]] for filter/sort and dict for paginator
         """
         return utils.dictify_query_params(self.dependency.get(key))
-        
-        
+
 ```
 Pass request or extract feature(filter/sorter/paginator) params at router and pass them as kwargs
 
@@ -226,9 +225,6 @@ Additionally, you can create **custom filters** as well.
 ## Thinking about adding Sorting???
 I won't leave you hanging there as well😎
 ```python
-
-
-
 @app.get("/employees", response_model=ListingPage[EmployeeListDetails])
 def get_employees(request: Request, db=Depends(get_db)):
     # define it here or anywhere
@@ -253,6 +249,8 @@ It is customizable.😎
 * Paginator
 
 You can check out customisation section in docs after going through basics and tutorials.
+
+Check out my other [repo](https://github.com/danielhasan1/test-fastapi-listing/blob/master/app/router/router.py) to see some examples
 
 ## Features and Readability hand in hand 🤝
 
