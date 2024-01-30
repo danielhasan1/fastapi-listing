@@ -4,7 +4,7 @@ Advanced items listing library that gives you freedom to design complex listing 
 
 [![.github/workflows/deploy.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml)
 [![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml) ![PyPI - Programming Language](https://img.shields.io/pypi/pyversions/fastapi-listing.svg?color=%2334D058)
-[![codecov](https://codecov.io/gh/danielhasan1/fastapi-listing/branch/dev/graph/badge.svg?token=U29ZRNAH8I)](https://codecov.io/gh/danielhasan1/fastapi-listing)
+[![codecov](https://codecov.io/gh/danielhasan1/fastapi-listing/branch/dev/graph/badge.svg?token=U29ZRNAH8I)](https://codecov.io/gh/danielhasan1/fastapi-listing) [![Downloads](https://static.pepy.tech/badge/fastapi-listing)](https://pepy.tech/project/fastapi-listing)
 
 ➡️ Craft powerful Listing REST APIs designed to serve websites akin to Stack Overflow:
 
@@ -12,12 +12,14 @@ Advanced items listing library that gives you freedom to design complex listing 
 
 Comes with:
 - pre defined filters
-- ability to define default sorting
-- ability to define default number of items per page
-- client could request dynamic page sizes
-- limiting number of items a client could request per page to  stop performance hiccups
-- ability to adapt to existing clients request format
-- any feature can be extended and injected
+- pre defined paginator
+- pre defined sorter
+
+## Advantage
+- simplify the intricate process of designing and developing complex listing APIs
+- Design components(USP) and plug them from anywhere
+- Components can be **reusable**
+- Best for fast changing needs
 
 ## Usage
 
