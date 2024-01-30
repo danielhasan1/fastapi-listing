@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 from fastapi_listing.abstracts import AbsPaginatingStrategy
-from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, Page, BasePage
+from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, Page, BasePage, PageWithoutCount
 from fastapi_listing.errors import ListingPaginatorError
 
 
@@ -32,11 +32,12 @@ class PaginationStrategy(AbsPaginatingStrategy):
         """
         return query.count()
 
-    def is_next_page_exists(self) -> Union[bool, None]:
+    def is_next_page_exists(self) -> bool:
         """expression results in bool val if count query allowed else None"""
         if self.fire_count_qry:
             return True if self.count - (self.page_num * self.page_size) > self.page_size else False
-        return None
+        else:
+            return self.count > self.page_size
 
     def validate_params(self, page_num, page_size):
         """validate given 1 based page number and pagesize"""
@@ -64,7 +65,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
         self.count = count
 
     def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> BasePage:
-        """Retrun paginated response"""
+        """Return paginated response"""
         page_num = pagination_params.get('page')
         page_size = pagination_params.get('pageSize')
         try:
@@ -75,24 +76,24 @@ class PaginationStrategy(AbsPaginatingStrategy):
         self.set_page_num(page_num)
         self.set_page_size(page_size)
         self.set_extra_context(extra_context)
-        if self.fire_count_qry:
-            self.set_count(self.get_count(query))
         return self.page(query)
 
     def page(self, query: SqlAlchemyQuery) -> BasePage:
         """Return a Page or BasePage for given 1-based page number."""
-        has_next: Union[bool, None] = self.is_next_page_exists()
-        query = self._slice_query(query)
-        return self._get_page(has_next, query)
+        if self.fire_count_qry:
+            self.set_count(self.get_count(query))
+            has_next: bool = self.is_next_page_exists()
+            query = self._slice_query(query)
+            return self._get_page(has_next, query)
+        else:
+            query = self._slice_query(query)
+            return self._get_page_without_count(query)
 
     def _get_page(self, *args, **kwargs) -> Page:
         """
         Return a single page of items
         this hook can be used by subclasses if you want to
         replace Page datastructure with your custom structure extending BasePage.
-        or
-        restricted count query execution and deduce has_next page on basis of current sequence length
-        for example: page size is 10 but len(page) < 10 so no next page exists.
         """
         has_next, query = args
         total_count = self.count
@@ -103,6 +104,20 @@ class PaginationStrategy(AbsPaginatingStrategy):
             currentPageNumber=self.page_num,
             data=query.all())
 
+    def _get_page_without_count(self, *args, **kwargs) -> PageWithoutCount:
+        """Get Page without total count for avoiding slow count query"""
+        query = args[0]
+        data = query.all()
+        self.set_count(len(data))
+        has_next = self.is_next_page_exists()
+        return PageWithoutCount(
+            hasNext=has_next,
+            currentPageSize=self.page_size,
+            currentPageNumber=self.page_num,
+            data=data[: self.count - 1] if has_next else data
+        )
+
+
     def _slice_query(self, query: SqlAlchemyQuery) -> SqlAlchemyQuery:
         """
         Return sliced query.
@@ -111,4 +126,9 @@ class PaginationStrategy(AbsPaginatingStrategy):
         like using an id range with the help of shared extra_contex
         or using a more advanced offset technique.
         """
-        return query.limit(self.page_size).offset(max(self.page_num - 1, 0) * self.page_size)
+        if self.fire_count_qry:
+            return query.limit(self.page_size).offset(max(self.page_num - 1, 0) * self.page_size)
+        else:
+            # get +1 than page size to see if next page exists
+            # a hotfix to avoid total count to determine next page existence
+            return query.limit(self.page_size + 1).offset(max(self.page_num - 1, 0) * self.page_size)

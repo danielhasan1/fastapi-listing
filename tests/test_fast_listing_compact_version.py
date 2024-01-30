@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from fastapi_listing import FastapiListing, MetaInfo
-from fastapi_listing.paginator import ListingPage
+from fastapi_listing.paginator import ListingPage, ListingPageWithoutCount
 
 from tests.pydantic_setup import EmployeeListDetails
 from tests.dao_setup import EmployeeDao
@@ -45,11 +45,25 @@ def read_main(request: Request):
     return resp
 
 
+@app.get("/v1/without-count/employees", response_model=ListingPageWithoutCount[EmployeeListDetails])
+def read_main(request: Request):
+    dao = EmployeeDao(read_db=get_db())
+    resp = FastapiListing(dao=dao,
+                          pydantic_serializer=EmployeeListDetails
+                          ).get_response(MetaInfo(default_srt_on="emp_no", allow_count_query_by_paginator=False))
+    return resp
+
+
 client = TestClient(app)
 
 
 def test_default_employee_listing():
     response = client.get("/v1/employees")
-    print(response.json())
     assert response.status_code == 200
     assert response.json() == original_responses.test_default_employee_listing
+
+
+def test_listing_without_total_count():
+    response = client.get("/v1/without-count/employees")
+    assert response.status_code == 200
+    assert response.json() == original_responses.test_default_employee_listing_without_count

@@ -5,7 +5,8 @@ __all__ = [
     "AnySqlAlchemyColumn",
     "SqlAlchemyModel",
     "BasePage",
-    "Page"
+    "Page",
+    "PageWithoutCount",
 ]
 
 from typing import TypeVar, List, Dict, Union, Sequence, Generic
@@ -46,7 +47,13 @@ SqlAlchemyModel = TypeVar("SqlAlchemyModel", bound=DeclarativeMeta)
 
 
 class Page(BasePage):
-    hasNext: Union[bool, None]  # None tells that we've turned off means to calculate this result due to absence of totalCount
+    hasNext: bool
     totalCount: int
+    currentPageSize: int
+    currentPageNumber: int
+
+
+class PageWithoutCount(BasePage):
+    hasNext: bool
     currentPageSize: int
     currentPageNumber: int

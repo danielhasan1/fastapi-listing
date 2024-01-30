@@ -27,3 +27,9 @@ class ListingPage(BaseListingPage[T], Generic[T]):
     currentPageSize: int = Field(alias="currentPageSize")
     currentPageNumber: int = Field(alias="currentPageNumber")
     totalCount: int = Field(alias="totalCount")
+
+
+class ListingPageWithoutCount(BaseListingPage[T], Generic[T]):
+    hasNext: bool = Field(alias="hasNext")
+    currentPageSize: int = Field(alias="currentPageSize")
+    currentPageNumber: int = Field(alias="currentPageNumber")
