@@ -3,6 +3,7 @@ __all__ = ['dictify_query_params']
 import json
 from urllib.parse import unquote
 from typing import Union, List, Optional, Type
+from enum import Enum
 
 
 def dictify_query_params(query_param_string: str) -> Union[dict, List[dict]]:
@@ -18,3 +19,8 @@ except ImportError:
     BaseModel: Optional[Type] = None
     VERSION = ""
     IS_PYDANTIC_V2 = None
+
+
+class Options(Enum):
+    ignore_limiter = "ignore_limiter"
+    abort_sorting = "abort_sorting"

@@ -437,3 +437,14 @@ def test_loader():
             default_srt_ord = ""
 
     assert e.value.args[0] == "Missing default_srt_ord attribute!"
+
+
+def test_default_employee_listing_with_special_flags():
+    response = client.get("/v1/employees",
+                          params={"ignore_sort": True,
+                                  "ignore_limiter": True,
+                                  "pagination": get_url_quoted_string({"pageSize": 200, "page": 1})
+                                  }
+                          ) # for the sake of test making it easy to test
+    assert response.status_code == 200
+    assert response.json().get("currentPageSize") == 200

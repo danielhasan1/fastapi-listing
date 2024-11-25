@@ -9,6 +9,7 @@ from fastapi_listing import loader
 from .pydantic_setup import EmployeeListDetails, EmployeeListDetailWithCustomFields
 from .dao_setup import EmployeeDao, DeptEmpDao
 from .dao_setup import Employee, Department, Title
+from fastapi_listing.utils import Options
 
 
 class DepartmentEmployeesQueryStrategy(QueryStrategy):
@@ -55,6 +56,8 @@ class EmployeeListingService(ListingService):
     def get_listing(self):
         resp = {}
         if self.extra_context.get("q") == "vanilla":
+            self.extra_context[Options.abort_sorting.value] = self.request.query_params.get("ignore_sort")
+            self.extra_context[Options.ignore_limiter.value] = self.request.query_params.get("ignore_limiter")
             resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListDetails).get_response(self.MetaInfo(self))
         elif self.extra_context.get("q") == "custom_fields":
             resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListDetailWithCustomFields,

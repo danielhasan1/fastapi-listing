@@ -11,7 +11,7 @@ from fastapi_listing.factory import interceptor_factory, strategy_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import BasePage
 from fastapi_listing.utils import HAS_PYDANTIC, BaseModel
-from fastapi_listing.utils import IS_PYDANTIC_V2
+from fastapi_listing.utils import IS_PYDANTIC_V2, Options
 from fastapi_listing.service.config import ListingMetaData
 from fastapi_listing.abstracts import ListingBase
 
@@ -113,7 +113,8 @@ class FastapiListing(ListingBase):
         except Exception:
             raise FastapiListingRequestSemanticApiException(status_code=422,
                                                             detail="Crap! Pagination went wrong.")
-        if page_params["pageSize"] > listing_meta_info.max_page_size:
+        if page_params["pageSize"] > listing_meta_info.max_page_size and \
+                not listing_meta_info.extra_context.get(Options.ignore_limiter.value):
             warn(f"""requested page size is greater than 'max_page_size', overwriting requested page size
             from {page_params['pageSize']} to {listing_meta_info.max_page_size}""",
                  FastAPIListingWarning,
@@ -134,6 +135,9 @@ class FastapiListing(ListingBase):
             raise ValueError("query strategy returned nothing Query object is expected!")
         fltr_query: Query = self._apply_filters(base_query,
                                                 listing_meta_info)
+        if listing_meta_info.extra_context.get(Options.abort_sorting.value):
+            return fltr_query
+
         srtd_query: Query = self._apply_sorting(fltr_query, listing_meta_info)
         return srtd_query
 
