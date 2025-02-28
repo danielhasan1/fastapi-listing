@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 jobs:
   pytest:
     name: Run tests with pytest
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, x86_64]
     strategy:
       matrix:
         python-version: [ 3.7, 3.8, 3.9, '3.10', '3.11' ]
