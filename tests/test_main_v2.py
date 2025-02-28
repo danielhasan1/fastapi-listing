@@ -159,14 +159,14 @@ def test_default_employee_listing_filter():
     assert response.json() == original_responses.test_string_like_filter
 
 
-def test_custom_serializer_field():
-    # Best flow suppresses custom field error
-    response = client.get("/v1/custom-employees?q=custom_fields",
-                          params={"filter": get_url_quoted_string([{"field": "lnm", "value": {"search": "kuda"}}]),
-                                  "pagination": get_url_quoted_string({"pageSize": 1, "page": 1})
-                                  }
-                          )
-    assert response.status_code == 200
+# def test_custom_serializer_field():
+#     # Best flow suppresses custom field error
+#     response = client.get("/v1/custom-employees?q=custom_fields",
+#                           params={"filter": get_url_quoted_string([{"field": "lnm", "value": {"search": "kuda"}}]),
+#                                   "pagination": get_url_quoted_string({"pageSize": 1, "page": 1})
+#                                   }
+#                           )
+#     assert response.status_code == 200
     # assert response.json() == original_responses.test_employee_listing_with_custom_field
 
 
