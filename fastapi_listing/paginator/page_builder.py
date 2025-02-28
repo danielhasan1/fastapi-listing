@@ -35,7 +35,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
     def is_next_page_exists(self) -> bool:
         """expression results in bool val if count query allowed else None"""
         if self.fire_count_qry:
-            return True if self.count - (self.page_num * self.page_size) > self.page_size else False
+            return True if self.count > (self.page_num * self.page_size) else False
         else:
             return self.count > self.page_size
 
