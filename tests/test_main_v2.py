@@ -395,7 +395,7 @@ def test_loader():
             default_srt_on = "sdfasd"
             default_dao = ListingService
 
-    assert e.value.args[0] == "Invalid Dao Type! Should Be type of GenericDao"
+    assert e.value.args[0] == "Invalid Dao Type! Should Be type of DaoAbstract"
 
     with pytest.raises(ValueError) as e:
         @loader.register()

@@ -44,8 +44,11 @@ setuptools.setup(
         "Programming Language :: Python :: 3.11",
     ],
     python_requires=">=3.7",
-    keywords=["starlette", "fastapi", "pydantic", "sqlalchemy"],
+    keywords=["starlette", "fastapi", "pydantic", "sqlalchemy", "clickhouse"],
     extras_require={
+        "clickhouse": [
+            "clickhouse-driver>=0.2.6",
+        ],
         "test": [
             "requests",
             "pytest>=6.2.4",

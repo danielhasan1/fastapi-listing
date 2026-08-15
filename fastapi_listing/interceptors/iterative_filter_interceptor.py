@@ -1,9 +1,11 @@
 from typing import List, Dict, Optional
 
 from fastapi_listing.abstracts import AbstractFilterInterceptor
+from fastapi_listing.errors import guard_legacy_signature
 from fastapi_listing.factory import filter_factory
-from fastapi_listing.filters.generic_filters import CommonFilterImpl
-from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest
+from fastapi_listing.filters.generic_filters import CanonicalFilter
+from fastapi_listing.context import QueryContext
+from fastapi_listing.ctyping import FastapiRequest
 
 
 class IterativeFilterInterceptor(AbstractFilterInterceptor):
@@ -22,14 +24,19 @@ class IterativeFilterInterceptor(AbstractFilterInterceptor):
     with other relative filters then don't apply other relative filters...
     """
 
-    def apply(self, *, query: SqlAlchemyQuery = None, filter_params: List[Dict[str, str]], dao=None,
-              request: Optional[FastapiRequest] = None, extra_context: dict = None) -> SqlAlchemyQuery:
+    def apply(self, *, context: QueryContext = None, filter_params: List[Dict[str, str]], dao=None,
+              request: Optional[FastapiRequest] = None, extra_context: dict = None) -> QueryContext:
         for applied_filter in filter_params:
-            filter_obj: CommonFilterImpl = filter_factory.create(applied_filter.get("field"),
-                                                                 dao=dao,
-                                                                 request=request,
-                                                                 extra_context=extra_context)
-            query = filter_obj.filter(field=applied_filter.get("field"),
-                                      value=applied_filter.get("value"),
-                                      query=query)
-        return query
+            filter_obj: CanonicalFilter = filter_factory.create(applied_filter.get("field"),
+                                                                dao=dao,
+                                                                request=request,
+                                                                extra_context=extra_context)
+            guard_legacy_signature(
+                filter_obj.filter, legacy_kwarg="query", new_kwarg="context",
+                subject=f"Custom filter {type(filter_obj).__name__!r}",
+                fix="Rename its 'query' parameter to 'context'; use context.native/"
+                    "context.with_native(...) for raw SQLAlchemy access.")
+            context = filter_obj.filter(field=applied_filter.get("field"),
+                                        value=applied_filter.get("value"),
+                                        context=context)
+        return context

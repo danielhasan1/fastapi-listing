@@ -77,7 +77,7 @@ Writing your own query strategy
     class DepartmentWiseEmployeesQuery(QueryStrategy):
 
         def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
-                      extra_context: dict = None) -> SqlAlchemyQuery:
+                      extra_context: dict = None) -> QueryContext:
             # as request and dao args are self explanatory
             # extra_context is a chained variable that can carry contextual data from one place
             # to another place. extremely helpful when passing args from router or client.
@@ -94,18 +94,18 @@ Add your new listing query to employee dao
 .. code-block:: python
 
 
-    from sqlalchemy.orm import Query
+    from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
 
     class EmployeeDao(ClassicDao):
         name = "employee"
         model = Employee
 
-        def get_employees_by_dept(self, dept_no: str) -> Query:
+        def get_employees_by_dept(self, dept_no: str) -> SqlAlchemyQueryContext:
             # assuming we have one to one mapping and we are passing manager department here
             query = self._read_db.query(self.model
                                         ).join(DeptEmp, Employee.emp_no == DeptEmp.emp_no
                                         ).filter(DeptEmp.dept_no == dept_no)
-            return query
+            return SqlAlchemyQueryContext(query)
 
 
 .. code-block:: python
@@ -193,3 +193,31 @@ Second Example
 Personally I mixes both of these when I know strategies are going to be simple I tend to make strategy objects capable of handlind different contexts but
 when I know or see my single strategy class is becoming hard to maintain I tend to breakdown them to handle specefic context at a time as a result having
 single responsibility objects.
+
+Backend-agnostic query objects (SQLAlchemy is no longer the only option)
+--------------------------------------------------------------------------
+
+Every place that used to pass around a raw SQLAlchemy ``Query`` now passes around a ``QueryContext``
+(``fastapi_listing.context.QueryContext``) instead. For the default SQLAlchemy backend this is just a thin
+wrapper - ``SqlAlchemyQueryContext`` - around your existing ``Query``, so ``get_query``/custom ``QueryStrategy``
+methods should return one of these instead of a bare ``Query``:
+
+.. code-block:: python
+
+    from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
+
+    class MyQueryStrategy(QueryStrategy):
+
+        def get_query(self, *, request=None, dao=None, extra_context: dict = None) -> QueryContext:
+            query = dao.get_default_read([...])  # a GenericDao already returns a QueryContext
+            return query
+
+If you need to do something the canonical filter/sort vocabulary doesn't cover (joins, eager loading,
+aggregates, ...), drop down to the raw SQLAlchemy ``Query`` via ``context.native``, mutate it however you like,
+then hand it back via ``context.with_native(new_query)``.
+
+This same ``QueryContext`` contract is what lets FastAPI Listing support non-ORM backends - a
+``ClickHouseQueryContext`` (``fastapi_listing.context.clickhouse``) ships as a reference implementation,
+paired with ``fastapi_listing.dao.ClickHouseDao``, proving the same ``Filter``/``SortingOrderStrategy``/
+``PaginationStrategy`` classes work unmodified against raw parameterized SQL, not just an ORM. See
+:ref:`learnfilters` for how filters stay backend-agnostic through the shared ``Op`` vocabulary.

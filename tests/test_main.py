@@ -179,7 +179,7 @@ def test_filter_factory_semantics():
             }
             default_dao = TitleDao
 
-    assert e.value.args[0] == "Invalid filter mapper semantic <class 'object'>! Expects a subclass of CommonFilterImpl"
+    assert e.value.args[0] == "Invalid filter mapper semantic <class 'object'>! Expects a subclass of CanonicalFilter"
 
     # checking args
     with pytest.raises(ValueError) as e:

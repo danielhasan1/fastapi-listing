@@ -1,8 +1,7 @@
 from typing import Type
 from abc import ABC, abstractmethod
 
-from sqlalchemy.orm import Query
-
+from fastapi_listing.context import QueryContext
 from fastapi_listing.ctyping import BasePage
 from fastapi_listing.abstracts import AbstractListingFeatureParamsAdapter
 from fastapi_listing.dao import GenericDao
@@ -12,19 +11,19 @@ from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 class ListingBase(ABC):
 
     @abstractmethod
-    def _prepare_query(self, listing_meta_info: ListingMetaInfo) -> Query:
+    def _prepare_query(self, listing_meta_info: ListingMetaInfo) -> QueryContext:
         pass
 
     @abstractmethod
-    def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
+    def _apply_sorting(self, query: QueryContext, listing_meta_info: ListingMetaInfo) -> QueryContext:
         pass
 
     @abstractmethod
-    def _apply_filters(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
+    def _apply_filters(self, query: QueryContext, listing_meta_info: ListingMetaInfo) -> QueryContext:
         pass
 
     @abstractmethod
-    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> BasePage:
+    def _paginate(self, query: QueryContext, listing_meta_info: ListingMetaInfo) -> BasePage:
         pass
 
     @abstractmethod

@@ -5,25 +5,25 @@ from typing import Optional, Callable
 from contextlib import contextmanager
 from warnings import warn
 
-from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from fastapi_listing.errors import MissingSessionError
+from fastapi_listing.ctyping import SqlAlchemySession
 
-_session: ContextVar[Optional[Session]] = ContextVar("_session", default=None)
+_session: "ContextVar[Optional[SqlAlchemySession]]" = ContextVar("_session", default=None)
 
-_replica_session: ContextVar[Optional[Session]] = ContextVar("_replica_session", default=None)
+_replica_session: "ContextVar[Optional[SqlAlchemySession]]" = ContextVar("_replica_session", default=None)
 
 
 class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
             app: ASGIApp, *,
-            master: Callable[[], Session] = None,
-            replica: Callable[[], Session] = None,
+            master: Callable[[], SqlAlchemySession] = None,
+            replica: Callable[[], SqlAlchemySession] = None,
             session_close_implicit: bool = False,
             suppress_warnings: bool = False,
     ):
@@ -43,14 +43,14 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
 class SessionProviderMeta(type):
 
     @property
-    def read_session(cls) -> Session:
+    def read_session(cls) -> SqlAlchemySession:
         read_replica_session = _replica_session.get()
         if read_replica_session is None:
             raise MissingSessionError
         return read_replica_session
 
     @property
-    def session(cls) -> Session:
+    def session(cls) -> SqlAlchemySession:
         master_session = _session.get()
         if master_session is None:
             raise MissingSessionError
@@ -62,7 +62,7 @@ class SessionProvider(metaclass=SessionProviderMeta):
 
 
 @contextmanager
-def manager(read_ses: Callable[[], Session], master: Callable[[], Session], implicit_close: bool,
+def manager(read_ses: Callable[[], SqlAlchemySession], master: Callable[[], SqlAlchemySession], implicit_close: bool,
             suppress_warnings: bool):
     global _session
     global _replica_session

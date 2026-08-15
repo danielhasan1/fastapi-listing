@@ -21,6 +21,30 @@ any count query.
 
 
 
+Post-fetch business logic
+-------------------------
+
+Not everything belongs in the query. Filling in zero-value rows for missing time buckets, a tie-break
+re-sort that can't be expressed in SQL, reshaping rows differently for CSV export than for the JSON
+response - these are all real needs that have nothing to do with filtering/sorting/pagination, but if
+your listing framework has no dedicated seam for them they tend to get bolted onto whatever's nearby
+(usually the endpoint function itself), which is exactly how disciplined query-building code turns into
+an unmaintainable pile over time.
+
+``PaginationStrategy`` has one governed home for this: override ``postprocess``.
+
+.. code-block:: python
+
+    class MyPaginationStrategy(PaginationStrategy):
+
+        def postprocess(self, rows, extra_context: dict):
+            # rows is whatever context.fetch() returned - runs after fetch, before the Page envelope is built
+            return rows
+
+It's identity by default and runs once, right after the rows are fetched and before ``hasNext``/``totalCount``/etc.
+are assembled into the response. Do post-fetch business logic here, not by overriding ``_get_page``/
+``_get_page_without_count`` (those exist to change the *page envelope shape*) or by reaching into the DAO.
+
 .. _alias overview:
 
 Why use alias

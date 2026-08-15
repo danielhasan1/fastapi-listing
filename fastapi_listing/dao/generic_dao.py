@@ -1,7 +1,7 @@
 from fastapi_listing.abstracts import DaoAbstract
-from sqlalchemy.orm import Session
+from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
 
-from fastapi_listing.ctyping import SqlAlchemyModel
+from fastapi_listing.ctyping import SqlAlchemyModel, SqlAlchemySession
 
 
 # noinspection PyAbstractClass
@@ -37,8 +37,8 @@ class GenericDao(DaoAbstract):
         since we already have the basic setup injecting the right session(read_db = read database session,
         write_db = write database session) will save hours of debugging and fixing when needed.
         """
-        self._read_db: Session = read_db
-        self._write_db: Session = write_db
+        self._read_db: SqlAlchemySession = read_db
+        self._write_db: SqlAlchemySession = write_db
 
     def create(self, values) -> SqlAlchemyModel:
         """
@@ -73,10 +73,10 @@ class GenericDao(DaoAbstract):
 
     def get_default_read(self, fields_to_read: list):
         """
-        Returns default model query with provided fields
-        Subclasses can use this to write custom listing queries when
-        there is no need for multiple queries.
+        Returns default model query with provided fields, wrapped in a
+        QueryContext so it can flow through the backend-agnostic
+        Filter/Sorter/Paginator pipeline.
 
         fields_to_read can be left or used.
         """
-        return self._read_db.query(*fields_to_read)
+        return SqlAlchemyQueryContext(self._read_db.query(*fields_to_read))
