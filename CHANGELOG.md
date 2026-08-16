@@ -48,6 +48,14 @@ and ships a ClickHouse reference implementation (raw parameterized SQL, no ORM) 
   `Op` vocabulary. Along the way, fixed a latent bug in `ClickHouseQueryContext.count_compile()`: counting a
   `GROUP BY` query directly returns one count *per group*, not the total number of groups: it now wraps as a
   derived table when grouped/having, matching what SQLAlchemy's `Query.count()` already did automatically.
+- Fixed the status code for "you requested a filter/sort field that isn't in `filter_mapper`/`sort_mapper`":
+  `NotRegisteredApiException` now raises `422 Unprocessable Entity`, not `409 Conflict`. `409` is for
+  resource-state conflicts (edit conflicts, duplicate creation) - an unregistered field isn't that, and the
+  same file already used `422` for the closely related "the filter/sort request itself is malformed" case, so
+  this was an inconsistency as well as a misuse of the code. If your client/telemetry specifically depended on
+  `409` here, register your own handler (`@app.exception_handler(NotRegisteredApiException)`) rather than
+  relying on the library's default - both exception classes are plain `fastapi.HTTPException` subclasses, so
+  this has always been overridable per-app without any library change.
 
 ### Migration
 

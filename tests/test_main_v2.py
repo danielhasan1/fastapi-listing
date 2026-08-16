@@ -308,12 +308,12 @@ def test_core_service_exceptions():
     resp = client.get("/v1/error-sorting",
                       params={"sort": get_url_quoted_string([{"field": "hdtds", "type": "asc"}])})
 
-    assert resp.status_code == 409
+    assert resp.status_code == 422
     assert resp.json() == {'detail': "Sorter(s) not registered with listing: {'hdtds'}, Did you forget to do it?"}
 
     resp = client.get("/v1/error-sorting",
                       params={"filter": get_url_quoted_string([{"field": "hdtds", "type": "asc"}])})
-    assert resp.status_code == 409
+    assert resp.status_code == 422
     assert resp.json() == {'detail': "Filter(s) not registered with listing: {'hdtds'}, Did you forget to do it?"}
     resp = client.get("/v1/error-sorting",
                       params={"filter": '%5B%22field%22%3A%20%22hdt%22%2C%20%22type%22%22asc%22%7D%5D'})
