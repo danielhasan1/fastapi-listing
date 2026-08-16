@@ -438,6 +438,23 @@ directly.
 pip install fastapi-listing[clickhouse]
 ```
 
+Canonical filters/sort/pagination cover the common case - equality/range/comparison checks on a plain
+column, single-column sort, offset/limit pagination. Real queries aren't always that simple, so every
+escape hatch that exists for SQLAlchemy (`context.native`) has a ClickHouse equivalent, and then some:
+
+* **`ClickHouseQueryContext.from_raw_sql(client=..., sql=..., params=...)`** - the full bypass. Hand-build
+  a query with CTEs, joins, window functions, a table function as the source, whatever the canonical `Op`
+  vocabulary can't express - using whatever query-building approach you already have - and you still get
+  back a `QueryContext` that canonical filters/sort/pagination can layer on top of, or that you can use
+  completely as-is.
+* **`HavingMixin`** - filter on an aggregated field after a `GROUP BY` (`SUM(x) > 100`), same canonical
+  `Op`s, routed to `HAVING` instead of `WHERE`: `class TotalAbove(HavingMixin, DataGreaterThanFilter): pass`.
+* **`order_by_raw(expression)`** - for a compound ordering rule (a tiebreak column, multiple sort keys)
+  that a single `field, direction` pair can't represent.
+* **`add_raw_condition(sql_template, **values)`** - a per-filter escape hatch for a backend-specific SQL
+  function (a full-text search builtin, an array operator, ...) with no canonical `Op` equivalent - values
+  are still bound through the driver's real parameter binding, never string-formatted into the SQL text.
+
 Want a different ORM or database driver (Tortoise, Django ORM, raw psycopg2, pymongo, ...)? Write your own
 `QueryContext` + DAO pair the same way `ClickHouseQueryContext`/`ClickHouseDao` do it - see `docs/query.rst`.
 Neither SQLAlchemy nor clickhouse-driver are required to install the package; both are opt-in extras.

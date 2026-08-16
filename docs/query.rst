@@ -221,3 +221,70 @@ This same ``QueryContext`` contract is what lets FastAPI Listing support non-ORM
 paired with ``fastapi_listing.dao.ClickHouseDao``, proving the same ``Filter``/``SortingOrderStrategy``/
 ``PaginationStrategy`` classes work unmodified against raw parameterized SQL, not just an ORM. See
 :ref:`learnfilters` for how filters stay backend-agnostic through the shared ``Op`` vocabulary.
+
+Escape hatches: when the canonical vocabulary genuinely isn't enough
+---------------------------------------------------------------------
+
+Canonical filters/sort/pagination cover comparisons on a plain column, single-column sort, and
+offset/limit pagination - the common case. Real queries aren't always that simple. ``ClickHouseQueryContext``
+has an escape hatch for each level of "not simple enough":
+
+``from_raw_sql`` - the full bypass
+    .. code-block:: python
+
+        raw_sql = build_my_complicated_query(account_id=..., date_range=...)  # CTEs, joins,
+                                                                                # window functions,
+                                                                                # a table function -
+                                                                                # however you already
+                                                                                # build it
+        context = ClickHouseQueryContext.from_raw_sql(client=my_client, sql=raw_sql, params={...})
+
+    Wraps your query as a derived table. Canonical filters/sort/pagination can still layer ``WHERE``/
+    ``ORDER BY``/``LIMIT`` on top of whatever columns your query exposes - or you can leave ``filter_mapper``
+    empty and let the raw SQL stand entirely as-is. Structural, request-scoped query shape (which account,
+    which date range, how a metric is computed) belongs here, built once by your ``QueryStrategy``/DAO -
+    not something a generic ``Filter`` class should know about.
+
+``HavingMixin`` - filtering on an aggregated field
+    .. code-block:: python
+
+        from fastapi_listing.filters.generic_filters import HavingMixin, DataGreaterThanFilter
+
+        class TotalConversionsAbove(HavingMixin, DataGreaterThanFilter):
+            pass
+
+    Same canonical ``Op`` (``GT``, in this case), routed to ``HAVING`` instead of ``WHERE`` - for filtering
+    on the result of a ``GROUP BY`` (``SUM(x) > 100``), which ``WHERE`` cannot express. Available on
+    ``SqlAlchemyQueryContext`` too (``context.having(field=..., op=..., value=...)``, mirroring ``.having()``
+    on a SQLAlchemy ``Query``).
+
+``order_by_raw`` - a compound ordering rule
+    .. code-block:: python
+
+        context.order_by_raw(f"(site_id = {int(own_domain_id)}) DESC, `{sort_column}` {direction}")
+
+    For an ordering rule that isn't a single ``field, direction`` pair - a tiebreak column pinned first,
+    then the user's chosen sort, or any other multi-key expression the canonical ``order_by()`` can't
+    represent.
+
+``add_raw_condition`` - a backend-specific SQL function, per filter
+    .. code-block:: python
+
+        from fastapi_listing.context.clickhouse import quote_identifier
+
+        class MultiSearchAnyFilter(CanonicalFilter):
+            def filter(self, *, field=None, value=None, context=None):
+                col = quote_identifier(self.extract_field(field))
+                return context.add_raw_condition(
+                    f"multiSearchAnyCaseInsensitive({col}, {{needles}})", needles=value.get("list") or [])
+
+    For a single filter that needs a builtin ClickHouse function (a full-text search primitive, an array
+    operator, ...) with no canonical ``Op`` equivalent. Values still flow through the driver's real
+    parameter binding (``%(name)s``) - never string-formatted into the SQL text - only the resolved
+    field/column identifier is spliced in directly (via ``quote_identifier``), the same way every other
+    op in ``ClickHouseQueryContext`` already handles identifiers vs. values.
+
+The rule of thumb across all four: reach for the narrowest escape hatch that solves your problem.
+Need a different clause or expression for one filter/one sort? Use ``having``/``order_by_raw``/
+``add_raw_condition``. Need a fundamentally different query shape (CTEs, joins, a table function)?
+``from_raw_sql`` is the one that hands you full control.
