@@ -9,12 +9,16 @@ jobs:
       matrix:
         python-version: [ 3.7, 3.8, 3.9, '3.10', '3.11' ]
     steps:
-      - name: Setup Test Db
+      - name: Setup MySQL Test Db
         run: |
           docker pull danielhasan1/mysql_employees_test_db
           docker run -d -p 3307:3306 --name dazzling_wright danielhasan1/mysql_employees_test_db
           sleep 20
           docker exec dazzling_wright bash setup-data
+      - name: Setup ClickHouse Test Db
+        run: |
+          docker run -d -p 9010:9000 --name fastapi_listing_clickhouse clickhouse/clickhouse-server:latest
+          sleep 10
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -25,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e .[test]
+          pip install -e .[test,clickhouse]
 #      - name: Run linting (flake8)
 #        run: |
 #          flake8 ./fastapi_listing ./tests

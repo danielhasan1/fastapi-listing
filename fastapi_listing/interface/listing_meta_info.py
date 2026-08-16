@@ -13,7 +13,7 @@ from fastapi_listing.abstracts import (AbsSortingStrategy, AbsPaginatingStrategy
                                        AbstractListingFeatureParamsAdapter)
 
 
-class ListingMetaInfo(Protocol):
+class ListingMetaInfo(Protocol):  # pragma: no cover - structural type only, never instantiated/called
 
     @property
     def paginating_strategy(self) -> AbsPaginatingStrategy:  # type : ignore  # noqa

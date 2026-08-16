@@ -66,18 +66,27 @@ def manager(read_ses: Callable[[], SqlAlchemySession], master: Callable[[], SqlA
             suppress_warnings: bool):
     global _session
     global _replica_session
+    # Tracked locally rather than inferred from _session.get()/_replica_session.get()
+    # in the finally block below: those are shared, module-level ContextVars, and
+    # their current value can be a leftover from an earlier, unrelated manager()
+    # call (e.g. one that used implicit_close=False) - not proof that *this* call
+    # set them. Checking the shared state instead of a local flag previously caused
+    # an UnboundLocalError when a call that only set one of the two tokens ran
+    # after an earlier call left the other ContextVar populated.
+    token_read_session: Optional[Token] = None
+    token_master_session: Optional[Token] = None
     if read_ses and master:
-        token_read_session: Token = _replica_session.set(read_ses())
-        token_master_session: Token = _session.set(master())
+        token_read_session = _replica_session.set(read_ses())
+        token_master_session = _session.set(master())
     elif master:
         sess = master()
-        token_read_session: Token = _replica_session.set(sess)
-        token_master_session: Token = _session.set(sess)
+        token_read_session = _replica_session.set(sess)
+        token_master_session = _session.set(sess)
         if not suppress_warnings:
             warn("Only 'master' session is provided. dao will use master for read executes."
                  "To suppress this warning add 'suppress_warnings=True'")
     elif read_ses:
-        token_read_session: Token = _replica_session.set(read_ses())
+        token_read_session = _replica_session.set(read_ses())
     else:
         raise ValueError("Error with DaoSessionBinderMiddleware! "
                          "Please provide either args read or master session callables.")
@@ -85,9 +94,9 @@ def manager(read_ses: Callable[[], SqlAlchemySession], master: Callable[[], SqlA
         yield
     finally:
         if implicit_close:
-            if _session.get():
+            if token_master_session is not None:
                 _session.get().close()
-                _session.reset(token_master_session)  # type: ignore # noqa: F823
-            if _replica_session.get():
+                _session.reset(token_master_session)
+            if token_read_session is not None:
                 _replica_session.get().close()
-                _replica_session.reset(token_read_session)  # type: ignore # noqa: F823
+                _replica_session.reset(token_read_session)

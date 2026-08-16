@@ -1,0 +1,23 @@
+# Local dev/test databases, mirroring what .github/workflows/tests.yml provisions in CI.
+# Not used by CI itself (CI provisions these directly via `docker run`, see the workflow file) -
+# this is for running the full suite (including the real-MySQL and real-ClickHouse tests) locally.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   docker exec fastapi_listing_mysql bash setup-data   # loads the employees sample data (first run only)
+#   PYTHONPATH=. pytest --cov=fastapi_listing --cov=tests --cov-report=term-missing
+#
+# Bring it down when done: docker compose -f docker-compose.dev.yml down
+
+services:
+  mysql:
+    image: danielhasan1/mysql_employees_test_db
+    container_name: fastapi_listing_mysql
+    ports:
+      - "3307:3306"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: fastapi_listing_clickhouse
+    ports:
+      - "9010:9000"

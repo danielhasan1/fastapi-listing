@@ -331,3 +331,49 @@ def test_postprocess_hook_default_is_identity():
         MetaInfo(default_srt_on="emp_no", default_srt_ord="asc")
     )
     assert [row.first_name for row in resp["data"]] == ["Sachin", "Rahul", "Anjali", "Priya"]
+
+
+# ---------- Remaining small gaps: value=None early-return, custom_fields, migration-guard's introspection edge, pydantic_serializer ----------
+
+def test_canonical_filter_with_none_value_is_a_noop_for_comparison_ops():
+    session = session_factory()
+    ctx = SqlAlchemyQueryContext(session.query(Employee))
+    flt = generic_filters.EqualityFilter(extra_context={}, field_extract_fn=lambda x: Employee.gender)
+    result = flt.filter(field="gender", value=None, context=ctx)
+    assert result is ctx
+    assert {row.emp_no for row in result.fetch()} == {1, 2, 3, 4}
+
+
+def test_query_strategy_custom_fields_skips_unknown_attributes_silently():
+    from fastapi_listing.strategies import QueryStrategy
+
+    dao = EmployeeDao(read_db=session_factory())
+    strategy = QueryStrategy()
+    fields = strategy.get_inst_attr_to_read(
+        custom_fields=True, field_list=["emp_no", "not_a_real_attribute", "first_name"], dao=dao)
+    assert fields == [Employee.emp_no, Employee.first_name]
+
+
+def test_guard_legacy_signature_skips_uninspectable_callables():
+    from fastapi_listing.errors import guard_legacy_signature
+
+    # a plain instance has no __call__ signature inspect.signature() can read -
+    # this must be treated as "can't tell, don't block" rather than crashing.
+    guard_legacy_signature(object(), legacy_kwarg="query", new_kwarg="context",
+                          subject="test", fix="n/a")  # should not raise
+
+
+def test_fastapi_listing_with_pydantic_serializer():
+    from pydantic import BaseModel
+
+    class EmployeeOut(BaseModel):
+        # No ORM-mode config needed: fastapi_listing only reads this model's
+        # field names to derive fields_to_fetch, it never serializes through it.
+        emp_no: int
+        first_name: str
+
+    dao = EmployeeDao(read_db=session_factory())
+    resp = FastapiListing(dao=dao, pydantic_serializer=EmployeeOut).get_response(
+        MetaInfo(default_srt_on="emp_no", default_srt_ord="asc")
+    )
+    assert [row.first_name for row in resp["data"]] == ["Sachin", "Rahul", "Anjali", "Priya"]
