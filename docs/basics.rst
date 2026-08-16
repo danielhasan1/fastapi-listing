@@ -10,88 +10,97 @@ To install FastAPI Listing, run:
 
     pip install fastapi-listing
 
+For the ClickHouse reference backend, install the extra as well:
+
+.. code-block:: bash
+
+    pip install fastapi-listing[clickhouse]
 
 .. _dao overview:
 
 
-The Dao (Data Access Object) layer
-----------------------------------
+The DAO (Data Access Object) layer
+-----------------------------------
 
-FastAPI Listing uses a `dao <https://www.oracle.com/java/technologies/data-access-object.html#:~:text=The%20Data%20Access%20Object%20(or,to%20a%20generic%20client%20interface>`_
-layer.
+FastAPI Listing uses a `DAO <https://www.oracle.com/java/technologies/data-access-object.html#:~:text=The%20Data%20Access%20Object%20(or,to%20a%20generic%20client%20interface>`_
+layer as the one place responsible for talking to the database.
 
-Benefits
+Benefits:
 
 * A dedicated place for writing queries
-* Better Separation
-* Ability to change queries independently
-* Provides common code usage for more than one place
-* imports look cleaner
+* Clear separation between data access and business logic
+* Queries can change independently of the rest of the service
+* Shared query logic has one obvious home instead of being copied across endpoints
+* Cleaner imports at the call site
 
-Metaphorically "a dedicated place where you cultivate your ingredients for cooking purpose" (stolen from sqlalchemy docs)
-
-FastAPI Listing uses single table Dao. Each dao class will be bound with single orm model class 📝.
+FastAPI Listing uses a single-table DAO: each DAO class is bound to one model.
 
 Dao objects
 ^^^^^^^^^^^
 
 .. py:class:: GenericDao
 
-when creating dao ``class`` extend ``GenericDao`` which comes with necessary setup code.
-Each Dao object support two protected (limiting their scope to dao layer only) session attributes.
+When creating a DAO class, extend ``GenericDao``, which comes with the necessary setup code. Every DAO
+object exposes two session attributes, scoped to the DAO layer only:
 
 ``_read_db`` and ``_write_db``
 
-You can use these attributes to communicate with the database. Provides early preparation of when you might need to implement master slave architecture.
-Non master slave arch users can point both of these attributes to same db as well. It's simple.
+Use these to communicate with the database. Keeping them separate is preparation for a read
+replica/primary split, should you need one later - if you don't have one, point both at the same
+session; there's no cost to doing so.
+
+``GenericDao`` is the SQLAlchemy-backed default. For a non-ORM backend, extend ``DaoAbstract``
+directly instead - see :doc:`query` for how the reference ``ClickHouseDao`` does this.
 
 Dao class attributes
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 .. py:attribute:: GenericDao.model
 
-    The sqlalchemy model class. Attribute type - **Required**
+    The SQLAlchemy model class. **Required.**
 
 .. py:attribute:: GenericDao.name
 
-    User defined name of dao class, should be unique. Attribute type - **Required**
+    A user-defined, unique name for the DAO class. **Required.**
 
 
 The Strategy layer
 -------------------
-Encapsulates process of:
-* writing data fetch logics  (Query Strategy)
-* applying sorting(if any) after fetching data (Sorting Strategy)
-* paginating data at the end (Paginating Strattegy)
 
-Inspiration of using strategy pattern for this:
-Depending upon logged in user/applied query filter/performance requirement/legacy based database schema(poorly managed)/data visual limiting due to maybe role of user.
-You will write multiple ways to prepare queries to fetch data, or different technique to handle sorting, or a lazy paginator etc.
-In any case this is a really good way to handle multiple logic implementations and their compositions.
+Encapsulates:
+
+* fetching data (Query Strategy)
+* applying sorting, if any, after fetching data (Sorting Strategy)
+* paginating the fetched data (Paginating Strategy)
+
+The strategy pattern fits well here because these concerns tend to vary independently: which query to
+run can depend on the logged-in user's role, which data layer they're allowed to see, performance
+constraints, or a legacy schema you can't change. You'll often end up with multiple ways to build a
+query, sort, or paginate - the strategy pattern gives each variant its own object rather than a growing
+pile of conditionals in one place.
 
 Query Strategy
 ^^^^^^^^^^^^^^
 
-Logical layer to decide on a listing query in a context. By default comes with a ``default_query`` strategy which generates a
-``select a,b,c,d from some_table`` query using sqlalchemy where a,b,c,d are columns given by the user.
+Decides what listing query to run, in context. The default ``default_query`` strategy generates a
+``select a, b, c, d from some_table`` query using SQLAlchemy, where ``a, b, c, d`` are the columns you
+provide.
 
 .. _querybasics:
 
-For simple use cases this gets the work done.
+That covers most simple cases.
 
 .. py:class:: QueryStrategy
 
-You can easily create your custom Query Strategy by extending base class.
+Create your own query strategy by extending the base class.
 
-➡️ Taking a real world example where using strategy pattern can be helpful:
+A concrete example of where the strategy pattern helps: you have an employee table and an
+organisational hierarchy - Director, Assistant Director, Division Manager, Manager, Lead, then
+individual contributors. You need an API that only shows employees under the logged-in user.
 
-You have an employee table and hierarchy Director*->Assistant Director*->Division Managers*->Managers*->Leads*->teams.
+There are two reasonable ways to structure that with strategies.
 
-You need to design an API to show list of employees associated to logged-in user only. For the sake of this example lets focus on query part only.
-
-With strategy you have two ways of achieving this.
-
-➡️ Creating context related query strategies:
+**One strategy class per context:**
 
 ``class DirectorQueryForEmp(QueryStrategy)``
 
@@ -103,118 +112,111 @@ With strategy you have two ways of achieving this.
 
 ``class LeadsQueryForEmp(QueryStrategy)``
 
-You can abstract and encapsulate relevant logic to make a decision on logged in user basis. You can choose which one to call at runtime.
+Encapsulate the logic for deciding which one applies, and choose at runtime.
 
-Or
-
-➡️ Encapsulate the whole thing into one:
+**Or one strategy class handling every context:**
 
 ``class EmployeeQuery(QueryStrategy)``
 
-And implement context based logics in one place. Choosing to write in any of above style is a personal decision based on project requirements.
+Branch on context inside a single class. Which style fits is a judgment call based on how the branches
+are likely to grow.
 
+Benefits of separating by context:
 
-Benefit of above approach:
-
-- Context is clear by just a look
-- light weight containers of logical instructions
-- Decoupled and easy to extend
-- Much Easier to incorporate new relevant features like adding for new role or super user.
+* the intent of each class is clear at a glance
+* each is a small, focused unit
+* easy to extend with a new role or a superuser case without touching the others
 
 Sorting Strategy
 ^^^^^^^^^^^^^^^^
 
-Responsible for applying sorting scheme(sql native sorting) on your query. Simple as it sound, nothing fancy here.
+Applies a sort order to your query. Nothing more than that.
 
 .. py:class:: SortingOrderStrategy
 
-**SortingOrderStrategy** ``class`` knows two *client* site keywords ``asc`` or ``dsc`` and applies sorting scheme on basis of this 📝.
+``SortingOrderStrategy`` understands two client-facing keywords, ``asc`` and ``dsc``, and sorts
+accordingly.
 
-🤯You are using different keywords to make sorting decision? No worries 😉 :ref:`Make FastAPI Listing adapt to it<adapterbenefit>`.
+Using different keywords on the client side? See :ref:`the adapter layer <adapterbenefit>`.
 
 
 Paginator Strategy
 ^^^^^^^^^^^^^^^^^^^
 
-Simple Paginator to paginate your database queries and return paginated response to your clients.
+Paginates query results and returns a paginated response to the client.
 
 .. py:class:: PaginationStrategy
 
-* Easily define pagination params.
-* Support dynamic page resizing.
-* You can configure ``default_page_size`` to return default number of items if client made a request without pagination params
-* You can configure ``max_page_size``, to avoid memory choke on absurd page size demands from clients.
-* Easily implement your own custom paginator to add more features like lazy loading or range based slicing.
+* Configure pagination parameters directly.
+* Supports dynamic page sizing.
+* Set ``default_page_size`` for requests that don't specify a page size.
+* Set ``max_page_size`` to cap how large a page a client can request.
+* Write your own paginator for lazy loading, range-based slicing, or other strategies.
 
-🤯You have an existing set of pagination params. can you still use it? Yes! 😉 :ref:`Make FastAPI Listing adapt to it<adapterbenefit>`.
+Have an existing set of pagination parameters? See :ref:`the adapter layer <adapterbenefit>`.
 
 The Filters layer
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
-The most used feature of any listing service easily, and maintaining filters is an art in itself ❤️.
+Usually the most-used part of a listing service, and one where things get messy fast without a bit of
+discipline.
 
-Abstracts away the complex procedure of applying filters, No more branching (if else) in your listing API even if you have more than a dozen filters,
-with this you can write performance packed robust filters.
+Filtering is abstracted so you never write a chain of ``if``/``else`` branches in a listing endpoint,
+even with a dozen filters applied.
 
-Inspired by **django-admin** design of writing and maintaining filters. Create filter anywhere easy to import ❤️ like any independent
-facade API. You will see how inbuilt ``generic_filters`` will make it easy and super fast to integrate filters in your listing APIs.
+Inspired by Django admin's approach to filters: define a filter once, import it anywhere, and reuse it
+across listing services. ``generic_filters`` ships a set of these ready to use.
 
-🤯 Can it support your existing clients filter parameters? Ofcourse! 😉 :ref:`Make FastAPI Listing adapt to it<adapterbenefit>`.
+Need this to work with an existing client's filter parameters? See :ref:`the adapter layer <adapterbenefit>`.
 
 .. _intereptorbasics:
 
 The Interceptor layer
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 
-Allows users to write custom execution plan for filters/Sorters.
+Lets you write a custom execution plan for filters or sorters.
 
-* Default filter execution plan follows iterative approach when one or more filters are applied by clients.
-* Default sorter execution plan allows sort on one param at a time.
+* The default filter execution plan applies filters one at a time, iteratively.
+* The default sort execution plan sorts on one field at a time.
 
-Reason of existence❓️ - In my personal experience there are special situations when applying two or many filters directly could cause
-multitude of problems if applied in one by one iterative fashion. Maybe you wanna skip one or combine two filter into one
-and form a more optimised and robust query for your db to avoid performance hiccups.
+Why this exists: applying several filters independently, one after another, doesn't always give the
+same result as applying them together. You may also want to combine two filters into a single, more
+efficient query rather than running them in sequence.
 
-Or
+Similarly for sorting - multi-field sort is supported, but on large tables it tends to hurt performance
+more than it helps. Filtering the data down first, then sorting, is usually the better trade-off.
 
-Allow sorting on more than one field at a time (I personally don't like the idea as for larger tables it degrades the performance) The best way in my humble opinion
-is to shorten your data via filters and then sort on your will.
-
-So now you know you can intercept the way filters and sorters are applied and add your custom behaviours to it.
+An interceptor is where you take control of *how* filters and sorters get applied, beyond the default
+one-at-a-time behavior.
 
 .. _adapterbenefit:
 
 Params Adapter layer
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
-Everyone implements filter/sorter/paginator layers at their client site differently. For example stackoverflow🧐:
+Every client encodes filter/sort/pagination parameters a little differently. See, for example, this
+`Stack Overflow discussion <https://drive.google.com/uc?export=view&id=1X1DiX7zRhnmJfw-t71Vgk4jnKVIExJzP>`_
+of how differently teams approach it.
 
-.. image:: https://drive.google.com/uc?export=view&id=1X1DiX7zRhnmJfw-t71Vgk4jnKVIExJzP
-  :width: 500
-  :alt: Stockoverflow client site params study
+Whatever convention your client already uses, ``CoreListingParamsAdapter`` lets FastAPI Listing adapt to
+it: read the raw HTTP request, and translate its query parameters into the shape FastAPI Listing expects
+natively.
 
-You might have a different approach, which is perfectly fine. This is where you can use FastAPI Listing to adjust to the
-parameters of your client's site by utilizing ``CoreListingParamsAdapter`` 🤓. With this, you can access your HTTP request
-object and parse the query parameters in a way that FastAPI Listing can comprehend.
+FastAPI Listing looks for three keys - ``sort``, ``filter``, and ``pagination`` - and the adapter is
+responsible for returning them translated into the native shape:
 
-FastAPI Listing uses ``sort``, ``filter`` and ``pagination`` as keys for the adapter. The adapter should then return the
-translated parameters signaled at the native level.
+- **Filter**: ``[{"field": "<your_field>", "value": {"search": "<your_value>"}}]`` - a list of filters, any number of which may be applied together.
+- **Sort**: ``[{"field": "<your_field>", "type": "<asc or dsc>"}]`` - a list of sort instructions (single-field sort by default; customisable).
+- **Pagination**: ``{"pageSize": "<integer page size>", "page": "<integer page number>"}`` - supports dynamic page sizing.
 
-Now, you may wonder how FastAPI Listing natively understands the mentioned parameters:
+This is particularly useful if you're adding FastAPI Listing to an existing service: you can adopt it
+without changing anything on the client side.
 
-- Filter: ``[{"field": "<your_field>", "value": {"search": "<your_value>"}}]`` - This represents a list of filters applied by clients, where multiple filters can be applied simultaneously.
-- Sort: ``[{"field": "<your_field>", "type": "<asc or dsc>"}]`` - This indicates a list of sorting instructions. While the default supports single sorting (as explained above), customization is possible.
-- Pagination: ``{"pageSize": "<integer pagesize>", "page": "<integer page number>"}`` - These are pagination parameters that support dynamic resizing of the page.
-
-This feature proves immensely beneficial for user with  existing operational services seeking an enhanced solution to manage
-their current codebase. By leveraging this library, user can potentially integrate it without necessitating modificatin to their remote client
-site code. Consequently, FastAPI Listing Service can seamlessly adapt to their requirements.
-
-Moreover, Filters also provide varying semantics for parameters based on ranges and list.
+Filters also support range- and list-based semantics beyond a single value - see :doc:`filters`.
 
 
 Conclusion
 ----------
 
-That's it folks that's all for the theory. If you were able to come this far I believe you have a basic understanding of all the components.
-In the next section we will start with Tutorials.
+That covers the theory. With a basic understanding of each component, you're ready for the tutorial,
+which walks through building a listing API end to end.

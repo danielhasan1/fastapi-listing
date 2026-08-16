@@ -6,32 +6,31 @@
 Welcome to fastapi-listing documentation!
 =========================================
 
-FastAPI Listing is an advanced data listing library that works on top of `fastAPI <https://fastapi.tiangolo.com/lo/>`_
-to reduce the efforts in writing and maintaining your listing APIs by providing
-a highly extensible, decoupled and reusable interface.
+FastAPI Listing is a data listing library that sits on top of `FastAPI <https://fastapi.tiangolo.com/lo/>`_
+to reduce the effort of writing and maintaining listing APIs, through a small set of composable,
+decoupled components rather than one large endpoint function.
 
-**Component** based Plug & Play architecture allows you to write easy to use and more **quickly** readable block of code.
-Inject dependencies or swap components as you write more and more complex logics.
+Filtering, sorting, pagination, and query construction are each their own **component** with a well
+defined contract. Compose the defaults for the common case, or swap any one of them out for a custom
+implementation without touching the rest.
 
-It ships with SQLAlchemy support out of the box, but the Filter/Sorter/Paginator/QueryStrategy contracts are
-backend-agnostic (see the *Customising your listing query* guide) - a non-ORM ClickHouse backend ships as a
-reference implementation proving the same abstraction works for raw parameterized SQL too, and the same
-approach extends to other ORMs/database toolkits.
+It ships with SQLAlchemy support out of the box, but the Filter/Sorter/Paginator/QueryStrategy contracts
+are backend-agnostic (see :doc:`query`) - a non-ORM ClickHouse backend ships as a reference implementation
+proving the same abstraction works for raw parameterized SQL too, and the same approach extends to other
+ORMs or database toolkits.
 
 Features
 --------
 
-* **Component Based Architecture**: Small collection of independent instructions. Easy to create and attach.
-* **Maintenance**: Fast to code and maintain, Light weight components are easy to create in case of multiple development iteration/customisations.
-* **Fewer Bugs**: Reduce the amount of bugs by always having single responsibility modules, Focus on one sub problem at a time to solve the bigger one.
-* **Easy**: Designed to be easy to use and never having the need to extend core modules.
-* **Short**: Minimize code duplication.
-* **Filters**: A predefined set of filters. Create new one or extend existing ones. An approach Inspired by **django admin**. Allows you to write powerful robust and reusable filters.
-* **Backport Compatibility**: Level up your existing listing APIs by using FastAPI Listing without changing any client site dependency utilizing adapters.
-* **Anywhere Dao objects**: Dao object powered by sqlalchemy sessions are just an import away. Use them anywhere to interact with database.
+* **Component-based architecture** - independent, single-responsibility pieces that are easy to create, test, and attach.
+* **Fewer bugs by construction** - each component does one thing, so a change in one rarely ripples into the others.
+* **No core modules to extend** - customisation happens by writing new components, not by subclassing internals.
+* **A predefined set of filters** - inspired by Django admin's approach to writing and maintaining filters; create your own alongside the built-ins.
+* **Backward compatibility via adapters** - adapt FastAPI Listing to an existing client's query-param format without changing the client.
+* **DAO objects usable anywhere** - import a registered DAO directly wherever you need database access, not just inside a listing endpoint.
 
-Having some knowledge of design patterns such as strategy pattern, adapter pattern and solid principles could be a plus going forward in this documentation 📚️.
-
+Some familiarity with the strategy and adapter patterns, and with SOLID principles generally, will make
+this documentation easier to follow, though it isn't required.
 
 The manual
 ----------

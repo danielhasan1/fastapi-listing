@@ -4,18 +4,14 @@ Tutorials
 Preparations
 ------------
 
-A simple example showing how easy it is to get started. Lets look at a little bit of context for better understanding.
+A walkthrough of building a listing API end to end. Your project layout may differ, but the FastAPI
+wiring is the same regardless.
 
-**Note** First lets setup the app to use the library
-
-Your project structure may differ, but all FastAPI related flow is similar in context.
-
-I'll be using the following structure for this tutorial:
-
+This tutorial uses the following structure:
 
 .. parsed-literal::
 
-    employess
+    employees
     \|-- app
     |   \|-- __init__.py
     |   \|-- :ref:`dao`
@@ -51,16 +47,15 @@ I'll be using the following structure for this tutorial:
     \|-- main.py
     \`-- requirements.txt
 
-Lets call this app **employees**
+Call this app **employees**.
 
 
 models
 ------
 
-model classes
+Model classes:
 
 .. code-block:: python
-
 
     class Employee(Base):
         __tablename__ = 'employees'
@@ -96,39 +91,36 @@ model classes
 
 Dao
 ---
-Here we have a local dao package where we will be adding all our :ref:`Dao<dao overview>` classes.
-I've additionally added a package to keep generic methods for common use, e.g. ``dao_generics.py`` file which looks something
-like this
+
+A local ``dao`` package holds every :ref:`DAO <dao overview>` class. It's also common to keep a small
+package of generic, reusable DAO helpers - here, ``dao_generics.py``:
 
 .. code-block:: python
 
+    import sqlalchemy
 
     from fastapi_listing.dao import GenericDao
+    from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
 
 
     class ClassicDao(GenericDao):  # noqa
         """
-        Not to be used directly as this class is missing required attributes 'model' and 'name' to be given by users.
-        model class is given when we are linking a new dao class with a new model/table
-        name is dao name that a user will use to invoke dao objects.
+        Not meant to be used directly - it's missing the required 'model' and 'name'
+        attributes, which a concrete subclass provides when binding to a model/table.
         """
 
         def check_pk_exist(self, id: int | str) -> bool:
-            # check if id exists in linked dao table
-            return self._read_db.query(self._read_db.query(self.model
-                                        ).filter(self.model.id == id).exists()).scalar()
+            return self._read_db.query(
+                self._read_db.query(self.model).filter(self.model.id == id).exists()
+            ).scalar()
 
+        def get_empty_query(self) -> SqlAlchemyQueryContext:
+            return SqlAlchemyQueryContext(self._read_db.query(self.model).filter(sqlalchemy.sql.false()))
 
-        def get_empty_query(self):
-            # return empty query
-            return self._read_db.query(self.model).filter(sqlalchemy.sql.false())
-
-Dao classes
+Concrete DAO classes, one per model, each in their own module:
 
 .. code-block:: python
 
-
-    # each dao will be placed in their own module/files
     from fastapi_listing.dao import dao_factory
 
     from app.dao import ClassicDao
@@ -137,28 +129,27 @@ Dao classes
         name = "title"
         model = Title
 
-    dao_factory.register_dao(TitleDao.name, TitleDao) # registering dao with app to use anywhere
+    dao_factory.register_dao(TitleDao.name, TitleDao)  # makes the DAO usable anywhere via dao_factory
 
     class EmployeeDao(ClassicDao):
         name = "employee"
         model = Employee
 
-    dao_factory.register_dao(EmployeeDao.name, EmployeeDao) # registering dao with app to use anywhere
+    dao_factory.register_dao(EmployeeDao.name, EmployeeDao)
 
     class DeptEmpDao(ClassicDao):
         name = "deptemp"
         model = DeptEmp
 
-    dao_factory.register_dao(DeptEmpDao.name, DeptEmpDao) # registering dao with app to use anywhere
+    dao_factory.register_dao(DeptEmpDao.name, DeptEmpDao)
 
 
 schema
 ------
 
-Response Schema (Support for pydantic 2 is added.)
+Response schema (Pydantic v2 is supported):
 
 .. code-block:: python
-
 
     class GenderEnum(enum.Enum):
         MALE = "M"
@@ -179,17 +170,16 @@ Response Schema (Support for pydantic 2 is added.)
 
 main
 ----
-Add middleware at main file
+
+Add the session-binding middleware in your main file:
 
 .. code-block:: python
     :emphasize-lines: 17
 
     def get_db() -> Session:
         """
-        replicating sessionmaker for any fastapi app.
-        anyone could be using a different way or opensource packages like fastapi-sqlalchemy
-        it all comes down to a single result that is yielding a session.
-        for the sake of simplicity and testing purpose I'm replicating this behaviour in this naive way.
+        Stand-in for a sessionmaker. Use whatever gives you a Session -
+        fastapi-sqlalchemy or your own factory both work the same way here.
         :return: Session
         """
         engine = create_engine("mysql://root:123456@127.0.0.1:3307/employees", pool_pre_ping=1)
@@ -198,23 +188,23 @@ Add middleware at main file
 
 
     app = FastAPI()
-    # fastapi-listing middleware offering anywhere dao usage policy. Just like anywhere door use sessions and dao
-    # anywhere in your code via single import.
+    # DaoSessionBinderMiddleware makes a registered dao usable anywhere via a
+    # single import, without threading a session through every function call.
 
-    # if you have a master slave architecture
+    # if you have a primary/replica architecture:
     app.add_middleware(DaoSessionBinderMiddleware, master=get_db, replica=get_db)
 
-    # if you have only a master database
+    # if you have a single database:
     app.add_middleware(DaoSessionBinderMiddleware, master=get_db)
 
-    # if you want fastapi listing to close session when returning a response
+    # if you want FastAPI Listing to close the session before returning the response:
     app.add_middleware(DaoSessionBinderMiddleware, master=get_db, session_close_implicit=True)
 
 router
 ------
 
-Write abstract listing api routers with FastAPI Listing.
-calling listing endpoint from routers
+Write listing endpoint routers with FastAPI Listing - calling the listing endpoint from a router looks
+like this:
 
 .. code-block:: python
     :emphasize-lines: 1, 5, 8
@@ -228,14 +218,14 @@ calling listing endpoint from routers
         resp = EmployeeListingService(request).get_listing()
         return resp
 
-service definition is given in below.
+The service definition follows below.
 
 
 .. _service:
 
 
-Writing your very first listing API using fastapi-listing
----------------------------------------------------------
+Writing your first listing API with FastAPI Listing
+-----------------------------------------------------
 
 .. code-block:: python
     :emphasize-lines: 1, 6, 10, 13, 14
@@ -243,10 +233,10 @@ Writing your very first listing API using fastapi-listing
 
     from fastapi_listing import ListingService, FastapiListing, loader
     from app.dao import EmployeeDao
-    from app.schema.response.employee_responses import EmployeeListDetails # optional
+    from app.schema.response.employee_responses import EmployeeListDetails  # optional
 
 
-    @loader.register() # run system checks to validate your listing service
+    @loader.register()  # validates the listing service's semantics at startup
     class EmployeeListingService(ListingService):
 
         default_srt_on = "Employee.emp_no"
@@ -257,30 +247,28 @@ Writing your very first listing API using fastapi-listing
                                     ).get_response(self.MetaInfo(self))
             return resp
 
-    # that's it your very first listing api is ready to be serverd.
-    #
+    # that's it - the first listing API is ready to serve.
 
-You actually began writing your listing API here. Before this everything was vanilla FastAPI code excluding doa setup 🤠
+Everything before this point was plain FastAPI/DAO setup; this is where the listing API itself begins.
 
-* **loader**: A utility decorator used on startup when classes gets loaded into the memory validates the semantics also helps to identify any abnormality within
-                your defined listing class.
-* **ListingService**: High level base class. All Listing Service classes will extend this.
-* **Attributes**: :ref:`attributes overview`
-* **EmployeeListDetails**: Optional pydantic class containing required fields to render. These field will get added automatically in vanilla query.
-    if you are not using pydantic then you could leave it or use list of fields.
-* **get_listing**: High level function, entrypoint for listing service.
-* **FastapiListing**: Low level class that you will only use as an expression which returns a result. Extending this is forbidden.
+* **loader**: a startup-time decorator that validates a listing service's semantics and flags mistakes early, rather than at request time.
+* **ListingService**: the base class every listing service extends.
+* **Attributes**: see :ref:`attributes overview`.
+* **EmployeeListDetails**: an optional Pydantic class listing the fields to render; these are added to the query automatically. Without Pydantic, pass a plain list of field names instead.
+* **get_listing**: the entry point for the listing service.
+* **FastapiListing**: a low-level class used as an expression that returns a result - not meant to be subclassed.
 
-Once you runserver, hit the endpoint ``localhost:8000/v1/employees`` and you will receive a json response with page size 10 (default page size).
+Start the server and hit ``localhost:8000/v1/employees`` to get a JSON response with 10 items (the
+default page size).
 
 
 .. _attributes overview:
 
 ``ListingService`` high level attributes
-----------------------------------------
+------------------------------------------
 
-This library is divided down to fundamental level blocks of any listing API, You can create these blocks independent from each other
-inject them into your listing service and their composition will communicate implicitly so you can focus more on writing solutions and leave their communication on the core service.
+Each of these blocks - filter, sort, pagination, query - is independent and composes implicitly through
+the core service, so you can focus on the logic of each rather than how they're wired together.
 
 .. py:currentmodule:: fastapi_listing.service.listing_main
 
@@ -288,80 +276,77 @@ inject them into your listing service and their composition will communicate imp
 
 .. py:attribute:: ListingService.filter_mapper
 
-    A ``dict`` containing allowed filters on the listing. ``{alias: value}`` where key should be an alias of field and value is
-    a tuple. You can use actual field names in place of alias its a matter of personal preferrence 🤓
+    A ``dict`` of allowed filters: ``{alias: value}``, where the key is an alias for the field (or the
+    field name itself, if you'd rather not alias it) and the value is a tuple.
 
-    for example: ``{"fnm": ("Employees.first_name", filter_class)}``
+    Example: ``{"fnm": ("Employees.first_name", filter_class)}``
 
-    value ``"Employees.first_name"`` shows relation. ``first_name`` from primary model ``Employees``.
-    This should always be unique. You could go sane defining your values
-    like this which will help you when debugging.
+    ``"Employees.first_name"`` shows the relation - ``first_name`` on the primary model, ``Employees``.
+    This value should always be unique; keeping it descriptive like this also helps when debugging.
 
-    alias/filter field will be sent in request by clients. for those who directly jumped here🤯 checkout :ref:`basics adapter layer<adapterbenefit>` first
-    to see how FastAPI Listing is capable of adapting to your existing clients without any modification.
+    The alias is what the client sends. If you're adapting an existing client's parameters rather than
+    starting fresh, see :ref:`the adapter layer <adapterbenefit>` first.
 
-For customising the behaviour you can check out customisation section ✏️.
-
-:ref:`alias overview`?
+See :ref:`alias overview` for why aliasing is worth doing in the first place.
 
 .. py:attribute:: ListingService.sort_mapper
 
-    A ``dict`` containing allowed sorting on the listing.
+    A ``dict`` of allowed sort fields.
 
-    for example: ``{"empno": "Employees.emp_no"}``
+    Example: ``{"empno": "Employees.emp_no"}``
 
-    sorter alias/fields will be sent in request by clients and you know FastAPI Listing can :ref:`adapt<adapterbenefit>` to them.
+    As with filters, sort aliases can be adapted to an existing client via :ref:`the adapter layer <adapterbenefit>`.
 
 
 .. py:attribute:: ListingService.default_srt_on
 
-    attribute provides field name used to sort listing item by default
+    The field to sort by when the request specifies no sort parameter.
 
 .. py:attribute:: ListingService.default_srt_ord
 
-    attributes provides sorting order, allowed ``asc`` and ``dsc`` 📝.
+    The default sort order: ``asc`` or ``dsc``.
 
 .. py:attribute:: ListingService.paginate_strategy
 
-    attribute provides pagination strategy name used by listing service to apply pagination on query.
-    Default strategy - ``default_paginator``
+    The pagination strategy name.
+    Default: ``default_paginator``.
 
 
 .. py:attribute::  ListingService.query_strategy
 
-    attribute provides query strategy name, used to get base query for your listing service.
-    Default strategy - ``default_query``
+    The query strategy name, used to build the base query.
+    Default: ``default_query``.
 
 
 .. py:attribute:: ListingService.sorting_strategy
 
-    attribute provides sorting strategy name, used to apply sorting on your base query.
-    Default strategy - ``default_sorter``
+    The sort strategy name, used to apply sorting to the base query.
+    Default: ``default_sorter``.
 
 .. py:attribute:: ListingService.sort_mecha
 
-    attribute provides interceptor name. :ref:`interceptors<intereptorbasics>` ❓️
-    Default interceptor - ``indi_sorter_interceptor``
+    The sort interceptor name - see :ref:`interceptors <intereptorbasics>`.
+    Default: ``indi_sorter_interceptor``.
 
 .. py:attribute:: ListingService.filter_mecha
 
-    attribute provides interceptor name. :ref:`interceptors<intereptorbasics>` ❓️
-    Default interceptor -  ``iterative_filter_interceptor``
+    The filter interceptor name - see :ref:`interceptors <intereptorbasics>`.
+    Default: ``iterative_filter_interceptor``.
 
 
 .. py:attribute:: ListingService.default_dao
 
-    provides listing service :ref:`dao` class.
-    every listing service should contain one primary doa only. You can use multiple dao/sqlalchemy models/tables in defintion via dao_factory.
+    The listing service's :ref:`DAO <dao overview>` class. Each listing service has exactly one primary
+    DAO, though a DAO can reference other models/tables via ``dao_factory`` when needed.
 
 .. py:attribute:: ListingService.default_page_size
 
-    default number of items in a single page.
+    The default number of items per page.
 
 .. _adapter_attr:
 
 .. py:attribute:: ListingService.feature_params_adapter
 
-    default adapter to resolve issue between incompatible objects. Users are advices to design their
-    own adapters to support their existing remote client site filter/sorter/page params. :ref:`adapters<adapterbenefit>` ❓️
-
+    The adapter used to reconcile an existing client's filter/sort/pagination parameter shape with
+    FastAPI Listing's own. Write your own to support your client's existing format - see
+    :ref:`the adapter layer <adapterbenefit>`.

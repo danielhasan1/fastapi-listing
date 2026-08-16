@@ -1,15 +1,10 @@
-
-
 Customising Paginator Strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We have a default pagination class. Which handles slicing of our data into pages with variable size. The provided pagination ``class``
-is simple and gets the work done. If you wanna write your own efficient paginating strategy for huge tables or any other use case
-you could write one by extending existing base or abstract paginating strategy ``class``.
-
-For example you may wanna implement a paginating strategy which works on range ids for huge tables or only `previous` `next` pagination strategy and avoid
-any count query.
-
+The default pagination strategy slices data into variable-sized pages and covers most cases. For a huge
+table, or a use case the default doesn't fit, extend the base paginating strategy to write your own -
+for example, a keyset/range-based strategy, or a "previous"/"next" style paginator that avoids a count
+query entirely.
 
 .. code-block:: python
     :emphasize-lines: 3, 4
@@ -17,12 +12,11 @@ any count query.
     @loader.register()
     class EmployeeListingService(ListingService):
         paginate_strategy: str = "default_paginator"
-        default_page_size: int = 10 # default page size modify this to change default page size.
-
+        default_page_size: int = 10  # change to alter the default page size
 
 
 Post-fetch business logic
--------------------------
+--------------------------
 
 Not everything belongs in the query. Filling in zero-value rows for missing time buckets, a tie-break
 re-sort that can't be expressed in SQL, reshaping rows differently for CSV export than for the JSON
@@ -47,10 +41,10 @@ are assembled into the response. Do post-fetch business logic here, not by overr
 
 .. _alias overview:
 
-Why use alias
--------------
+Why use an alias
+-----------------
 
-* Avoid giving away original column names at client level. A steps towards securing and maintaining abstraction at api level.
-* Shorter alias names are light weight. payload looks more friendly.
-* Saves a little bit of bandwidth by saving communicating some extra characters.
-* save coding time with shorter keys.
+* Avoids exposing real column names to the client - a small step toward keeping the API's abstraction boundary intact.
+* Shorter aliases keep response payloads lighter.
+* Saves a little bandwidth by not sending longer key names.
+* Saves coding time with shorter keys.

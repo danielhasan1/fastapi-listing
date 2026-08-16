@@ -1,54 +1,46 @@
-Customising your listing  query
+Customising your listing query
 -------------------------------
 
-By default FastAPI Listing prepares simple queries which may look like:
+By default, FastAPI Listing prepares a simple query, roughly:
 
-``select a,b,c,d from table``
+``select a, b, c, d from table``
 
-where ``a,b,c,d`` are columns that you provide either via pydantic serializer or as a list of strings.
+where ``a, b, c, d`` are the columns you provide, either via a Pydantic serializer or as a list of
+strings.
 
-Remember this?
+Recall from the tutorial:
 
 ``FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListindDetail).get_response(self.MetaInfo(self))``
 
 ``FastapiListing(self.request, self.dao, fields_to_fetch=['a', 'b', 'c', 'd']).get_response(self.MetaInfo(self))``
 
-core ``class`` invokes ``get_default_read`` to prepare above mentioned vanilla query. You can easily overwrite this method
-in your dao class to write your custom query.
+Internally, this calls ``get_default_read`` on your DAO to build that query. Override it on your own DAO
+class to write a custom query instead - ``pydantic_serializer``/``fields_to_fetch`` become optional once
+you're building the query yourself.
 
-You can either pass ``pydantic_serializer``/``fields_to_fetch`` or not as you will be writing custom ``query``.
 
+Advanced guide for generating listing queries
+-----------------------------------------------
 
-Advanced guide for generating listing query
--------------------------------------------
+Most non-trivial listing APIs need more than one query, chosen based on context - and getting this wrong
+tends to be where listing API performance actually breaks down.
 
-Most of the time you will be writing your own custom optimised queries for retrieving listing data and it isn't unusual to write
-multiple queries that gets fired on different context.
+A representative example: users belong to different roles, and each role should only see a subset of
+the data. Every listing request needs to answer two questions:
 
-A brief example could be:
+1. what role does the logged-in user have?
+2. which data layer does that role's data live in?
 
-You have a system where users are grouped together in different roles. Each group of user are separated on
-different layer of data levels so you need to check two thing in every listing API call
+Different roles may need meaningfully different queries - some simple, some more involved, some backed
+by a cache. As covered in the basics, :ref:`query strategies <querybasics>` are how you encapsulate this,
+keeping query construction separate from the rest of the service.
 
-1. What role logged in user have,
+First example: context-based switching at the service level
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2. On which data layer the user lies and show only relevant or allowed data,
-
-To tackle this situation you may wanna write different query for each group of users.
-Some queries may look simple some may look advanced some may even corporate caching layer.
-This part could easily kill your listing API performance if not handled well or a small change could induce huge errors.
-
-Going back to the topic.
-
-As mentioned in the basics section you can create :ref:`strategies<querybasics>` encapsulating query generation logics and abstracting query preparation from rest of the code.
-
-First Example
-^^^^^^^^^^^^^
-
-Lets say you have a dept manager table
+Say you have a department-manager table:
 
 .. code-block:: python
-
 
     class DeptManager(Base):
         __tablename__ = 'dept_manager'
@@ -62,13 +54,10 @@ Lets say you have a dept manager table
         department = relationship('Department')
         employee = relationship('Employee')
 
-
-Whenever department managers logs into the app they should only see employees who are associated to them (engineering department manager should only see engineering staff)
-
-Writing your own query strategy
+A department manager should only see employees in their own department (an engineering manager sees
+engineering staff, and nothing else). Here's a query strategy for that:
 
 .. code-block:: python
-
 
     from fastapi_listing.strategies import QueryStrategy
     from fastapi_listing.factory import strategy_factory
@@ -78,21 +67,19 @@ Writing your own query strategy
 
         def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
                       extra_context: dict = None) -> QueryContext:
-            # as request and dao args are self explanatory
-            # extra_context is a chained variable that can carry contextual data from one place
-            # to another place. extremely helpful when passing args from router or client.
-            dept_no: str = dept_no # assuming we found dept no of logged in user
-            return dao.get_employees_by_dept(dept_no) # method defined in dao class
+            # extra_context threads contextual data from one stage of the pipeline to
+            # another - handy for passing values in from the router or the client
+            dept_no: str = dept_no  # assume we've already resolved the logged-in user's dept_no
+            return dao.get_employees_by_dept(dept_no)  # defined on the DAO below
 
-    # it is important to register your strategy with factory for use.
-    strategy_factory.register("<whatever name you choose>", DepartmentWiseEmployeesQuery)
+    # strategies must be registered with the factory before use
+    strategy_factory.register_strategy("<a name you choose>", DepartmentWiseEmployeesQuery)
 
 .. _dept_emp_q_stg:
 
-Add your new listing query to employee dao
+Add the corresponding method to the employee DAO:
 
 .. code-block:: python
-
 
     from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
 
@@ -101,12 +88,13 @@ Add your new listing query to employee dao
         model = Employee
 
         def get_employees_by_dept(self, dept_no: str) -> SqlAlchemyQueryContext:
-            # assuming we have one to one mapping and we are passing manager department here
+            # assumes a one-to-one mapping; dept_no here is the manager's own department
             query = self._read_db.query(self.model
                                         ).join(DeptEmp, Employee.emp_no == DeptEmp.emp_no
                                         ).filter(DeptEmp.dept_no == dept_no)
             return SqlAlchemyQueryContext(query)
 
+Then switch to it at the service level, based on context:
 
 .. code-block:: python
     :emphasize-lines: 9
@@ -116,55 +104,50 @@ Add your new listing query to employee dao
 
         default_srt_on = "Employee.emp_no"
         default_dao = EmployeeDao
-        query_strategy = "default_query" # strategy chosen in case runtime switch condition not satisfied
+        query_strategy = "default_query"  # used unless the switch below fires
         def get_listing(self):
-            if user == manager: # imaginary conditions
-                self.switch("query_strategy","<whatever name we choose>") # switch strategy on the fly on object/request level
+            if user == manager:  # illustrative condition
+                self.switch("query_strategy", "<a name you choose>")  # switch strategy for this request
 
             resp = FastapiListing(self.request, self.dao).get_response(self.MetaInfo(self))
             return resp
 
-In above example I have decided to make a switch for query strategy at runtime. So whenever a department manager logs in ``query_strategy`` will be
-switched to fetch relative data and whenever other user logs in they will see global data because you have a default ``query_strategy`` placed as well. Lets call it context based switching.
+Here, the switch happens at the service level: a department manager gets the department-scoped query,
+every other user gets the default. Call this context-based switching.
 
-Second Example
-^^^^^^^^^^^^^^
+Second example: encapsulating the switch inside the strategy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. **Different Ways to Handle Queries:**
-
-   If you want to deal with context based switching separately, you can encapsulate logic in a single strategy class. Add instructions to generate context based queries. Inject this class into your listing service ``default_strategy = <your new strategy class>``.
+If you'd rather keep context-based branching out of the service entirely, put it inside a single
+strategy class instead, and inject that strategy as ``query_strategy``:
 
 .. code-block:: python
 
     from fastapi_listing.strategies import QueryStrategy
     from fastapi_listing.factory import strategy_factory
-    from sqlalchemy.orm import Query
+    from fastapi_listing.context import QueryContext
 
 
     class EmployeesQuery(QueryStrategy):
 
         def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
-                      extra_context: dict = None) -> Query:
-            # assuming in this scope we know about logged in user
-            user = logged_in_user
+                      extra_context: dict = None) -> QueryContext:
+            user = logged_in_user  # assume this scope has access to the logged-in user
             match user.role:
-                case "manager" :
-                    query = self.get_manager_query(user)
-                    ... # you define other contexts like manager
-                    ...
-                    ...
-                case _" : #encountering any unknown context return empty query
-                    query = dao.get_empty_query() # defined in classic dao
+                case "manager":
+                    query = self.get_manager_query(user, dao)
+                    # ... other roles handled the same way
+                case _:
+                    query = dao.get_empty_query()  # any unrecognised role gets nothing back
 
             return query
 
-        def get_manager_query(self, user, dao) -> Query:
-            # assuming we have a way to get dept_no
+        def get_manager_query(self, user, dao) -> QueryContext:
             dept_no = dao.get_dept_no_via_user(user)
             return dao.get_employees_by_dept(dept_no)
 
-    # it is important to register your strategy with factory for use.
-    strategy_factory.register("<whatever name you choose for employee query class>", EmployeesQuery)
+    # strategies must be registered with the factory before use
+    strategy_factory.register_strategy("<a name for this strategy>", EmployeesQuery)
 
 .. code-block:: python
 
@@ -172,27 +155,23 @@ Second Example
 
         default_srt_on = "Employee.emp_no"
         default_dao = EmployeeDao
-        query_strategy = "<whatever name you choose for employee query class>"
+        query_strategy = "<a name for this strategy>"
         def get_listing(self):
-            # if user == manager: # imaginary conditions
-            #     self.switch("query_strategy","<whatever name we choose>") # switch strategy on the fly on object/request level
-
-            # we made our query strategy class to exhibit different behaviour no need of above code
+            # the strategy itself now handles context - no switch call needed here
             resp = FastapiListing(self.request, self.dao).get_response(self.MetaInfo(self))
             return resp
 
-2. **Two Approaches for Query Handling:**
+Which approach to use
+^^^^^^^^^^^^^^^^^^^^^^
 
-   Some people might want to decide which query method to use right where the service is like we did in first example. They like to keep the way queries work separate and simple. They can use ``switch`` to easily switch between different methods.
+Both are valid; it comes down to where you'd rather keep the branching logic:
 
-3. **Choosing the Right Approach:**
+* keep it at the service level (first example) if you like seeing the switch happen right where the service is defined
+* keep it inside the strategy (second example) if you'd rather the service stay simple and let the strategy object handle context on its own
 
-   It's completely a users choice to make their objects behave in a certain way. FastAPI Listing is capable of adhering to users need 😍 whether you wanna keep your context based switching at service level
-   or at strategy level (query strategy class) inject it in your listing service as mention in first point and make your query strategy ``object`` capable of behaving context wise.
-
-Personally I mixes both of these when I know strategies are going to be simple I tend to make strategy objects capable of handlind different contexts but
-when I know or see my single strategy class is becoming hard to maintain I tend to breakdown them to handle specefic context at a time as a result having
-single responsibility objects.
+In practice, a mix often works best: when a strategy is simple, let it handle its own context; once a
+single strategy class becomes hard to follow, split it into one class per context so each stays focused
+on a single responsibility.
 
 Backend-agnostic query objects (SQLAlchemy is no longer the only option)
 --------------------------------------------------------------------------

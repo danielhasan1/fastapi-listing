@@ -1,7 +1,7 @@
 Customisation
 =============
 
-Learn how to customise your listing service without losing any performance with FastAPI Listing ✨
+How to customise your listing service without giving up any of the performance of a hand-written query.
 
 .. toctree::
    :maxdepth: 3

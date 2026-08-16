@@ -3,11 +3,10 @@
 Adding Filters to your listing API
 ----------------------------------
 
-The most interesting part of a listing that becomes the most hated part of any listing super easily.
+Filtering is the most-used part of a listing API, and also the part most likely to turn messy without
+some discipline.
 
-Starting with an easy request.
-
-Adding a filter that will filter your employee listing on basis of  ``gender``.
+Start with a simple request: filter the employee listing by ``gender``.
 
 .. code-block:: python
     :emphasize-lines: 1, 7
@@ -22,82 +21,79 @@ Adding a filter that will filter your employee listing on basis of  ``gender``.
             "gdr": ("Employee.gender", generic_filters.EqualityFilter),
         }
 
-        # rest of the definition is going to be same no change required.
+        # rest of the definition is unchanged
 
-In above example we have imported a module ``generic_filters`` which holds some of the very commonly used query filters supported by FastAPI Listing.
-These are highly reusable and support a cross model in place hook when you may wanna provide secondary model field.
-There are a bunch of filters out of the box to speed up your regular listing API development.😉
-
+``generic_filters`` holds the commonly used filters that ship with FastAPI Listing - reusable, and each
+supports referencing a secondary model's field in place. There's a filter here for most common cases:
 
 
 .. list-table::
    :widths: auto
 
    * - ``EqualityFilter``
-     - equality filter ``a == b``
+     - equality filter, ``a == b``
    * - ``InEqualityFilter``
-     - inequality filter ``a != b``
+     - inequality filter, ``a != b``
    * - ``InDataFilter``
-     - ``in`` filter ``a in (b)``
+     - ``in`` filter, ``a in (b)``
    * - ``BetweenUnixMilliSecDateFilter``
-     - best way to avoid conflict between date formate awareness. deal in unix timestamp. range filter ``between(start,end)``
+     - range filter, ``between(start, end)``, over Unix timestamps - avoids ambiguity between date formats
    * - ``StringStartsWithFilter``
-     - like filter ``a like b%``
+     - like filter, ``a like b%``
    * - ``StringEndsWithFilter``
-     - like filter ``a like %b``
+     - like filter, ``a like %b``
    * - ``StringContainsFilter``
-     - contains substring filter ``a like %b%``. recommended use on only small tables
+     - substring filter, ``a like %b%`` - recommended only on small tables
    * - ``StringLikeFilter``
-     - string equality filter ``a like b``
+     - string equality filter, ``a like b``
    * - ``DataGreaterThanFilter``
-     - greater than filter ``a > b``
+     - greater-than filter, ``a > b``
    * - ``DataGreaterThanEqualToFilter``
-     - greater than equal to filter ``a >= b``
+     - greater-than-or-equal filter, ``a >= b``
    * - ``DataLessThanFilter``
-     - less than filter a < b
+     - less-than filter, ``a < b``
    * - ``DataLessThanEqualToFilter``
-     - less than equal to filter a <= b
+     - less-than-or-equal filter, ``a <= b``
    * - ``DataGropByElementFilter``
-     - aggregation filter ``a group by b``
+     - aggregation filter, ``a group by b``
    * - ``DataDistinctByElementFilter``
-     - distinct data filter ``distinct a``
+     - distinct filter, ``distinct a``
    * - ``HasFieldValue``
-     - has field filter ``a is null`` or ``a is not null``
+     - null-check filter, ``a is null`` or ``a is not null``
    * - ``MySqlNativeDateFormateRangeFilter``
-     - native date formate range filter between(a,b)
+     - range filter, ``between(a, b)``, over MySQL's native date format
 
 
-I hope you still remember :ref:`filter_mapper <filter_mapper_label>`
+Recall :ref:`filter_mapper <filter_mapper_label>` from the tutorial - each entry has three parts:
 
-Each item of this mapping dict has 3 key components.
+1. the key sent by the remote client
+2. the tuple:
 
-1. the key itself which will be sent in remote client request.
-2. The tuple
-    * first item is ``model.field`` -> Field associated to primary table. The filter will be applied on it.
-    * second item is your filter class definition.
+   * first item: ``model.field`` - the field on the primary table the filter applies to
+   * second item: the filter class
 
-And that's it you have successfully implemented your first filter.
+That's a complete, working filter.
 
+Aliasing your fields (the dict key) over their real names has a few concrete benefits:
 
-Several benefits of having an alias over your actual fields as shown in the above dict key.
-1. You will never expose your actual field name to the remote client which help to secure your service.
-2. You will have a more cleaner looking request urls which will only make sense to software developers.
-3. It will trim out the extra information exposing from urls.
+1. the actual column name is never exposed to the client
+2. request URLs stay short and meaningful to other developers, not database internals
+3. less information leaks through the URL than would otherwise
 
-How FastAPI Listing reads filter params:
+How FastAPI Listing reads filter parameters:
 
-* when you have a single value filter - ``[{"field": "alias<(filter mapper dict key)>", "value":{"search":<whatever remote client chose to search>}}]`` 📝
-* when you have multi value filter - ``[{"field": "alias<(filter mapper dict key)>", "value":{"list":<whatever remote client chose to search in list>}}]`` 📝
-* when you have a range value filter - ``[{"field": "alias<(fileter mapper dict key)>", "value":{"start":<whatever remote client chose to search>, "end":<whatever remote client chose to search>}}]`` 📝
+* single-value filter - ``[{"field": "<filter_mapper key>", "value": {"search": "<value>"}}]``
+* multi-value filter - ``[{"field": "<filter_mapper key>", "value": {"list": [<values>]}}]``
+* range filter - ``[{"field": "<filter_mapper key>", "value": {"start": "<value>", "end": "<value>"}}]``
 
-**If you have an existing running service that means you already have running remote client setup that will be sending different named query params for filter, then
-use the :ref:`adapter` to make your existing listing service adapt to your existing code.**
+Adapting an existing client's filter parameter names? See :ref:`the adapter layer <adapter_attr>`.
 
 
 Customising your filters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Using secondary model field. Lets say you wanna use a field from ``DeptEmp`` model. If you give the write your filter like this
+Say you want to filter on a field from the ``DeptEmp`` model rather than the listing's primary model. A
+filter written like this:
 
 .. code-block:: python
 
@@ -105,10 +101,10 @@ Using secondary model field. Lets say you wanna use a field from ``DeptEmp`` mod
         "gdr": ("Employee.dept_no", generic_filters.EqualityFilter),
     }
 
-it will raise an attribute error which is expected as your primary model doesnt have this field.
-We have a rule to only allow a primary model plugged to our listing service.
+raises an ``AttributeError``, as expected - the primary model has no such field, and only a primary
+model may be attached to a listing service directly.
 
-To allow passing secondary model field
+To filter on a secondary model's field, add a resolver as a third tuple item:
 
 .. code-block:: python
     :emphasize-lines: 2
@@ -117,27 +113,23 @@ To allow passing secondary model field
         "dpt": ("Employee.DeptEmp.dept_no", generic_filters.EqualityFilter, lambda x: getattr(DeptEmp, x))
     }
 
-Lets see what extra we have in our tuple above.
+The lambda tells the filter which model's field to use when applying it.
 
-We have an extra lambda definition which tells what model field to use when this filter gets applied.
-As to why I chained two model names ``Employee.DeptEmp.dept_no``?
+Why the chained name, ``Employee.DeptEmp.dept_no``? Filters register centrally in a factory keyed by
+field path, which must be unique - two filters can't register under the same path. The alias
+(``filter_mapper`` key) can repeat across listing services, and different schemas can share column
+names, but a chained name like ``Employee.DeptEmp.dept_no`` makes the relationship explicit (``Employee``
+to ``DeptEmp``, field ``dept_no``) while staying unique. You're free to use a different naming
+convention, as long as it stays unique and legible.
 
-There is a filter factory which centrally encapsulates all application logic. It works on unique field names(So you can't provide duplicate names).
-the **alias(filter mapper dict key)** could be same for multiple listing services and multiple database schema could contain same field names
-but any database asks you to provide unique schema(table) name similarly we register the filter under `schema.field` name to reduce for users to always coming
-up with random unique names.
-Chaining the name like this shows a clear relation that from ``Employee`` to ``DeptEmp`` where field is ``dept_no``.
-Though you can argue with it and still choose a different way of adding your filter field. Just make sure it is understandable.
-
-Note that if we use filter with this query strategy :ref:`dept emp query strategy <dept_emp_q_stg>` then only this would work. becuase our base query is aware of
-``DeptEmp``.
+Note that a filter like this only works if the listing's query strategy already joins in ``DeptEmp`` -
+see :ref:`the dept-emp query strategy <dept_emp_q_stg>`.
 
 Writing a custom filter
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-You wanna write your own filter because FastAPI Listing default filters were unable to fulfill your use case 🥹.
-
-Its easy to do as well. You wanna write a filter which does a full name scan combining first_name and last_name columns.
+Sometimes the built-in filters don't cover a use case - here, a filter that scans across both
+``first_name`` and ``last_name`` for a full-name match:
 
 .. code-block:: python
     :emphasize-lines: 2, 4, 6
@@ -149,7 +141,7 @@ Its easy to do as well. You wanna write a filter which does a full name scan com
     class FullNameFilter(generic_filters.CanonicalFilter):
 
         def filter(self, *, field: str = None, value: dict = None, context: QueryContext = None) -> QueryContext:
-            # field is not necessary here as this is a custom filter and user have full control over its implementation
+            # field isn't needed here - this filter has full control over its own implementation
             if value:
                 emp_dao: EmployeeDao = dao_factory.create("employee", replica=True)
                 emp_ids: list[int] = emp_dao.get_emp_ids_contain_full_name(value.get("search"))
@@ -157,64 +149,58 @@ Its easy to do as well. You wanna write a filter which does a full name scan com
                 context = context.with_native(native)
             return context
 
-As you can see in above filter class we are inheriting from ``CanonicalFilter``, part of our ``generic_filters``
-module (``CommonFilterImpl`` is kept as a deprecated alias for one release if you're upgrading existing code).
-In our filter class we have a single filter method with fixed signature - note the last argument is now
-``context`` (a backend-agnostic ``QueryContext``) rather than a raw SQLAlchemy ``query``. When you need SQLAlchemy-specific
-behaviour like a fluent ``.filter()`` chain, use ``context.native`` to reach the underlying ``Query`` and
-``context.with_native(...)`` to hand the mutated query back. you will receive your filter value as a dict.
-We have also used **dao factory**  which allows us to use anywhere dao policy.
-You basically filter your query and return it.
-And just like that voila your custom filter is ready. No need to think how you will call it, this will be handled implicitly by filter mechanics(interceptor).
+This inherits from ``CanonicalFilter`` (``generic_filters``); ``CommonFilterImpl`` remains as a
+deprecated alias for one release if you're upgrading existing code. A custom filter implements a single
+``filter`` method with a fixed signature - note the last argument is ``context``, a backend-agnostic
+``QueryContext``, rather than a raw SQLAlchemy ``query``. For SQLAlchemy-specific behavior like a fluent
+``.filter()`` chain, reach the underlying ``Query`` via ``context.native``, mutate it, and hand it back
+via ``context.with_native(...)``. The filter's value arrives as a ``dict``.
 
-Most built-in filters don't need any of this: they simply declare a canonical ``op`` (see ``fastapi_listing.ops.Op``)
-and hand off to the context - ``EqualityFilter``, ``InDataFilter`` and the rest of ``generic_filters`` work
-unmodified whether your DAO is backed by SQLAlchemy or a non-ORM backend like the reference ``ClickHouseDao``.
-Write a custom filter with ``context.native`` only when the canonical ``Op`` vocabulary genuinely can't express
-what you need.
+This example also uses the DAO factory, which lets any registered DAO be used from anywhere, not just
+its own listing service. Filter, then return the (possibly rewrapped) context - the filter interceptor
+calls this implicitly; there's nothing else to wire up.
 
-Why do we need an interceptor? Just bear with this example to have an idea of when you may wanna use or write your own interceptor.
+Most built-in filters need none of this: they declare a canonical ``op`` (see ``fastapi_listing.ops.Op``)
+and hand off to the context - ``EqualityFilter``, ``InDataFilter``, and the rest of ``generic_filters``
+work unmodified whether the DAO is backed by SQLAlchemy or a non-ORM backend like the reference
+``ClickHouseDao``. Reach for ``context.native`` only when the canonical ``Op`` vocabulary genuinely can't
+express what you need.
 
-Lets say you have a listing of products and a mapping table where products are mapped to some groups and each group belongs to a bigger group.
+Why an interceptor, and when to write one
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Your mapping table looks like this
+An example of where a custom interceptor earns its keep:
+
+Say you have a product listing with a mapping table linking products to groups, and groups to a parent
+group:
 
 .. code-block:: sql
 
     id | product_id | group_id | sub_group_id
 
+You've added filters for group, sub-group, and product, each resolving IDs from the mapping table before
+applying an ``in`` filter. So when a client applies:
 
-You added filters for group sub group and product on your listing. You wrote your custom filters to either apply **lazy join** or resolve mapping data
-and then apply the filter. So when:
+* a group filter - your group filter runs
+* a group and sub-group filter together - both run, the sub-group filter still seeing the group filter, since the client hasn't removed it
+* group, sub-group, and product together - all three run
 
-* A user applies Group filter - Your custom Group Filter gets called.
-* A user applies Sub Group filter - Your custom SubGroup Filter gets called with above Group Filter because user hasn't removed above filter.
-* A user applies Product filter with above two filters Your Product filter gets called with maybe with existing ``generic_filters.EqualityFilter`` Filter.
-
-Group -> Sub Group -> Product
-
-As the default interceptor runs in an iterative fashion which applies filter one by one you may end up getting different results. Why? lets see:
-
-You may try to find id of products mapped to Group A and applies filter on these ids. Perfect ✅
+The default interceptor applies filters one at a time, iteratively, which can give the wrong result here.
+Consider filtering by group ``A`` and sub-group ``A_a`` together:
 
 ``select product_id from mapping where group_id = 'A';``
 
-and then feed these product_id into your filter via ``in`` query.
+feeds those product IDs into an ``in`` filter. Applying the sub-group filter next repeats the process
+independently:
 
-On application of second filter you will repeat above process to find product ids and apply the filter again but wait will you receive sane results? I doubt it. ❌
+``select product_id from mapping where sub_group_id = 'A_a';``
 
-``select product_id from mapping where sub_group_id = "A_a";``
+Each filter resolves its own product IDs and applies them separately, rather than the two constraints
+being applied together - the two ``in`` filters don't compose into "products in group A AND sub-group
+A_a." What's actually needed is:
 
-First your Group Filter is called. It returned product_ids. Then your Sub Group Filter is called and it may return different product_ids
-again you will feed these product_ids into your filter via ``in`` query. To avoid this you could create an advanced filter which is combination of both.
-Create a custom filter where you could find product_ids with below query
+``select product_id from mapping where group_id = 'A' and sub_group_id = 'A_a';``
 
-``select product from mapping where group_id = 'A' and sub_group_id = 'A_a';`` ✅
-
-This will give you accurate product_ids. Once you have a custom filter you could detect if these two filters are applied together
-and modify their application by combining these two into one.
-
-Hope this gives you a more clear picture of situations where filter interceptor could play a significance role in reducing code complexity and
-providing a more cleaner approach towards writing your code.
-
-I've faced situations like this in some system and to resolve such situation interceptor could be a big help.
+A custom interceptor can detect that both filters are applied together and combine them into a single
+query like this one, rather than resolving each independently. This is exactly the kind of case where an
+interceptor earns its complexity: reducing several dependent filters into one correct, efficient query.
