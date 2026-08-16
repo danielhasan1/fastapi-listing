@@ -2,7 +2,7 @@ from typing import Dict, Tuple, Optional, Callable
 import inspect
 import types
 
-from fastapi_listing.filters.generic_filters import CommonFilterImpl
+from fastapi_listing.filters.generic_filters import CanonicalFilter
 from fastapi_listing.ctyping import AnySqlAlchemyColumn
 
 
@@ -10,7 +10,7 @@ class FilterObjectFactory:
     def __init__(self):
         self._filters = {}
 
-    def register_filter(self, key: str, builder: CommonFilterImpl,
+    def register_filter(self, key: str, builder: CanonicalFilter,
                         field_extractor_fn: Callable[[str], AnySqlAlchemyColumn] = None):
         if key is None or not key:
             raise ValueError("Invalid type key!")
@@ -27,15 +27,15 @@ class FilterObjectFactory:
             raise ValueError(f"Invalid filter mapper semantic {mapper_val}! first tuple element should be field (str)")
         if not inspect.isclass(mapper_val[1]):
             raise ValueError(f"Invalid filter mapper semantic {mapper_val[1]!r}! Expects a class!")
-        if not issubclass(mapper_val[1], CommonFilterImpl) and mapper_val[1] != CommonFilterImpl:
+        if not issubclass(mapper_val[1], CanonicalFilter) and mapper_val[1] != CanonicalFilter:
             raise ValueError(f"Invalid filter mapper semantic {mapper_val[1]!r}!"
-                             f" Expects a subclass of CommonFilterImpl")
+                             f" Expects a subclass of CanonicalFilter")
         if len(mapper_val) == 3 and not isinstance(mapper_val[2], types.FunctionType):
             raise ValueError(f"positional arg error, expects a callable but received: {mapper_val[2]!r}!")
         return True
 
     def register_filter_mapper(
-            self, filter_mapper: Dict[str, Tuple[str, CommonFilterImpl, Optional[Callable[[str], AnySqlAlchemyColumn]]]]
+            self, filter_mapper: Dict[str, Tuple[str, CanonicalFilter, Optional[Callable[[str], AnySqlAlchemyColumn]]]]
     ):
         for key, val in filter_mapper.items():
             if self.is_mapper_semantic_valid(val):

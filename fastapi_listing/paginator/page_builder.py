@@ -1,7 +1,8 @@
-from typing import Optional, Union
+from typing import Optional
 
 from fastapi_listing.abstracts import AbsPaginatingStrategy
-from fastapi_listing.ctyping import SqlAlchemyQuery, FastapiRequest, Page, BasePage, PageWithoutCount
+from fastapi_listing.context import QueryContext
+from fastapi_listing.ctyping import FastapiRequest, Page, BasePage, PageWithoutCount
 from fastapi_listing.errors import ListingPaginatorError
 
 
@@ -22,7 +23,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
         self.extra_context = None
         self.fire_count_qry = fire_count_qry
 
-    def get_count(self, query: SqlAlchemyQuery) -> int:
+    def get_count(self, context: QueryContext) -> int:
         """
         Override this method to return a dummy count or generate count in more optimized manner.
         User may want this to avoid slow count(*) query or double query or have page setup that doesn't require
@@ -30,7 +31,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
         Overall special checks needs to be setup.
         like returning a massive dummy count and then depending upon empty main_data avoiding trip to next page etc.
         """
-        return query.count()
+        return context.count()
 
     def is_next_page_exists(self) -> bool:
         """expression results in bool val if count query allowed else None"""
@@ -64,7 +65,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
     def set_count(self, count: int):
         self.count = count
 
-    def paginate(self, query: SqlAlchemyQuery, pagination_params: dict, extra_context: dict) -> BasePage:
+    def paginate(self, context: QueryContext, pagination_params: dict, extra_context: dict) -> BasePage:
         """Return paginated response"""
         page_num = pagination_params.get('page')
         page_size = pagination_params.get('pageSize')
@@ -76,18 +77,18 @@ class PaginationStrategy(AbsPaginatingStrategy):
         self.set_page_num(page_num)
         self.set_page_size(page_size)
         self.set_extra_context(extra_context)
-        return self.page(query)
+        return self.page(context)
 
-    def page(self, query: SqlAlchemyQuery) -> BasePage:
+    def page(self, context: QueryContext) -> BasePage:
         """Return a Page or BasePage for given 1-based page number."""
         if self.fire_count_qry:
-            self.set_count(self.get_count(query))
+            self.set_count(self.get_count(context))
             has_next: bool = self.is_next_page_exists()
-            query = self._slice_query(query)
-            return self._get_page(has_next, query)
+            context = self._slice_query(context)
+            return self._get_page(has_next, context)
         else:
-            query = self._slice_query(query)
-            return self._get_page_without_count(query)
+            context = self._slice_query(context)
+            return self._get_page_without_count(context)
 
     def _get_page(self, *args, **kwargs) -> Page:
         """
@@ -95,19 +96,20 @@ class PaginationStrategy(AbsPaginatingStrategy):
         this hook can be used by subclasses if you want to
         replace Page datastructure with your custom structure extending BasePage.
         """
-        has_next, query = args
+        has_next, context = args
         total_count = self.count
+        rows = self.postprocess(context.fetch(), self.extra_context)
         return Page(
             hasNext=has_next,
             totalCount=total_count,
             currentPageSize=self.page_size,
             currentPageNumber=self.page_num,
-            data=query.all())
+            data=rows)
 
     def _get_page_without_count(self, *args, **kwargs) -> PageWithoutCount:
         """Get Page without total count for avoiding slow count query"""
-        query = args[0]
-        data = query.all()
+        context = args[0]
+        data = self.postprocess(context.fetch(), self.extra_context)
         self.set_count(len(data))
         has_next = self.is_next_page_exists()
         return PageWithoutCount(
@@ -118,7 +120,7 @@ class PaginationStrategy(AbsPaginatingStrategy):
         )
 
 
-    def _slice_query(self, query: SqlAlchemyQuery) -> SqlAlchemyQuery:
+    def _slice_query(self, context: QueryContext) -> QueryContext:
         """
         Return sliced query.
 
@@ -127,8 +129,8 @@ class PaginationStrategy(AbsPaginatingStrategy):
         or using a more advanced offset technique.
         """
         if self.fire_count_qry:
-            return query.limit(self.page_size).offset(max(self.page_num - 1, 0) * self.page_size)
+            return context.limit_offset(limit=self.page_size, offset=max(self.page_num - 1, 0) * self.page_size)
         else:
             # get +1 than page size to see if next page exists
             # a hotfix to avoid total count to determine next page existence
-            return query.limit(self.page_size + 1).offset(max(self.page_num - 1, 0) * self.page_size)
+            return context.limit_offset(limit=self.page_size + 1, offset=max(self.page_num - 1, 0) * self.page_size)

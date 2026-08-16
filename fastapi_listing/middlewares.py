@@ -5,25 +5,25 @@ from typing import Optional, Callable
 from contextlib import contextmanager
 from warnings import warn
 
-from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from fastapi_listing.errors import MissingSessionError
+from fastapi_listing.ctyping import SqlAlchemySession
 
-_session: ContextVar[Optional[Session]] = ContextVar("_session", default=None)
+_session: "ContextVar[Optional[SqlAlchemySession]]" = ContextVar("_session", default=None)
 
-_replica_session: ContextVar[Optional[Session]] = ContextVar("_replica_session", default=None)
+_replica_session: "ContextVar[Optional[SqlAlchemySession]]" = ContextVar("_replica_session", default=None)
 
 
 class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
             app: ASGIApp, *,
-            master: Callable[[], Session] = None,
-            replica: Callable[[], Session] = None,
+            master: Callable[[], SqlAlchemySession] = None,
+            replica: Callable[[], SqlAlchemySession] = None,
             session_close_implicit: bool = False,
             suppress_warnings: bool = False,
     ):
@@ -43,14 +43,14 @@ class DaoSessionBinderMiddleware(BaseHTTPMiddleware):
 class SessionProviderMeta(type):
 
     @property
-    def read_session(cls) -> Session:
+    def read_session(cls) -> SqlAlchemySession:
         read_replica_session = _replica_session.get()
         if read_replica_session is None:
             raise MissingSessionError
         return read_replica_session
 
     @property
-    def session(cls) -> Session:
+    def session(cls) -> SqlAlchemySession:
         master_session = _session.get()
         if master_session is None:
             raise MissingSessionError
@@ -62,22 +62,31 @@ class SessionProvider(metaclass=SessionProviderMeta):
 
 
 @contextmanager
-def manager(read_ses: Callable[[], Session], master: Callable[[], Session], implicit_close: bool,
+def manager(read_ses: Callable[[], SqlAlchemySession], master: Callable[[], SqlAlchemySession], implicit_close: bool,
             suppress_warnings: bool):
     global _session
     global _replica_session
+    # Tracked locally rather than inferred from _session.get()/_replica_session.get()
+    # in the finally block below: those are shared, module-level ContextVars, and
+    # their current value can be a leftover from an earlier, unrelated manager()
+    # call (e.g. one that used implicit_close=False) - not proof that *this* call
+    # set them. Checking the shared state instead of a local flag previously caused
+    # an UnboundLocalError when a call that only set one of the two tokens ran
+    # after an earlier call left the other ContextVar populated.
+    token_read_session: Optional[Token] = None
+    token_master_session: Optional[Token] = None
     if read_ses and master:
-        token_read_session: Token = _replica_session.set(read_ses())
-        token_master_session: Token = _session.set(master())
+        token_read_session = _replica_session.set(read_ses())
+        token_master_session = _session.set(master())
     elif master:
         sess = master()
-        token_read_session: Token = _replica_session.set(sess)
-        token_master_session: Token = _session.set(sess)
+        token_read_session = _replica_session.set(sess)
+        token_master_session = _session.set(sess)
         if not suppress_warnings:
             warn("Only 'master' session is provided. dao will use master for read executes."
                  "To suppress this warning add 'suppress_warnings=True'")
     elif read_ses:
-        token_read_session: Token = _replica_session.set(read_ses())
+        token_read_session = _replica_session.set(read_ses())
     else:
         raise ValueError("Error with DaoSessionBinderMiddleware! "
                          "Please provide either args read or master session callables.")
@@ -85,9 +94,9 @@ def manager(read_ses: Callable[[], Session], master: Callable[[], Session], impl
         yield
     finally:
         if implicit_close:
-            if _session.get():
+            if token_master_session is not None:
                 _session.get().close()
-                _session.reset(token_master_session)  # type: ignore # noqa: F823
-            if _replica_session.get():
+                _session.reset(token_master_session)
+            if token_read_session is not None:
                 _replica_session.get().close()
-                _replica_session.reset(token_read_session)  # type: ignore # noqa: F823
+                _replica_session.reset(token_read_session)

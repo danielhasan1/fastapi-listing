@@ -30,7 +30,7 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=["tests.*"]),
     package_data={"fastapi_listing": ["py.typed"]},
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
@@ -44,8 +44,11 @@ setuptools.setup(
         "Programming Language :: Python :: 3.11",
     ],
     python_requires=">=3.7",
-    keywords=["starlette", "fastapi", "pydantic", "sqlalchemy"],
+    keywords=["starlette", "fastapi", "pydantic", "sqlalchemy", "clickhouse"],
     extras_require={
+        "clickhouse": [
+            "clickhouse-driver>=0.2.6",
+        ],
         "test": [
             "requests",
             "pytest>=6.2.4",

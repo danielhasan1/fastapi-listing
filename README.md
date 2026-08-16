@@ -6,16 +6,22 @@ Advanced items listing library that gives you freedom to design really complex l
 [![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml) ![PyPI - Programming Language](https://img.shields.io/pypi/pyversions/fastapi-listing.svg?color=%2334D058)
 [![codecov](https://codecov.io/gh/danielhasan1/fastapi-listing/branch/dev/graph/badge.svg?token=U29ZRNAH8I)](https://codecov.io/gh/danielhasan1/fastapi-listing) [![Downloads](https://static.pepy.tech/badge/fastapi-listing)](https://pepy.tech/project/fastapi-listing)
 
+> **Upgrading to 0.4.0?** It's a breaking change **only** if you wrote a custom `Filter`/`Sorter`/`QueryStrategy`/
+> `PaginationStrategy` subclass - the plain `GenericDao` + `generic_filters` + default-strategies flow below is
+> unaffected. See [CHANGELOG.md](CHANGELOG.md) for the migration table.
+
 Comes with:
 - pre defined filters
 - pre defined paginator
 - pre defined sorter
+- SQLAlchemy support out of the box, and a backend-agnostic core so you're not locked into one ORM
 
 ## Advantage
 - simplify the intricate process of designing and developing complex listing APIs
 - Design components(USP) and plug them from anywhere
 - Components can be **reusable**
 - Best for fast changing needs
+- Not an ORM captive: filters/sorter/paginator are written against a small `QueryContext` contract, not a raw SQLAlchemy `Query` - swap in a different backend without rewriting your filters
 
 ## Installing
 
@@ -72,7 +78,7 @@ class Employee(Base):
 class EmployeeDao(GenericDao):
     """write your data layer access logic here. keep it raw!"""
     name = "employee"
-    model = Employee # sqlalchemy model class (support for pymongo/tortoise orm is in progress)
+    model = Employee # sqlalchemy model class. Not on SQLAlchemy? See "Backend support" below.
 
 
 class EmployeeListDetails(BaseModel):
@@ -413,6 +419,45 @@ The Applications are endless with customisations
 You can check out customisation section in docs after going through basics and tutorials.
 
 Check out my other [repo](https://github.com/danielhasan1/test-fastapi-listing/blob/master/app/router/router.py) to see some examples
+
+## Backend support
+
+fastapi-listing ships with SQLAlchemy support by default, but nothing in the Filter/Sorter/Paginator/QueryStrategy
+contract is SQLAlchemy-specific. Every one of them is written against a small `QueryContext` interface
+(`fastapi_listing/context`), not a raw SQLAlchemy `Query` - `SqlAlchemyQueryContext` is just the default
+implementation of it.
+
+As proof this isn't SQLAlchemy in disguise, a **ClickHouse** backend ships as a reference implementation
+(`fastapi_listing.dao.ClickHouseDao` + `fastapi_listing.context.clickhouse.ClickHouseQueryContext`) - raw
+parameterized SQL via `clickhouse-driver`, no ORM at all. The same `generic_filters` classes
+(`EqualityFilter`, `InDataFilter`, ...) and the default `SortingOrderStrategy`/`PaginationStrategy` work
+against it completely unmodified, because they only ever talk to the `QueryContext`, never to SQLAlchemy
+directly.
+
+```python
+pip install fastapi-listing[clickhouse]
+```
+
+Canonical filters/sort/pagination cover the common case - equality/range/comparison checks on a plain
+column, single-column sort, offset/limit pagination. Real queries aren't always that simple, so every
+escape hatch that exists for SQLAlchemy (`context.native`) has a ClickHouse equivalent, and then some:
+
+* **`ClickHouseQueryContext.from_raw_sql(client=..., sql=..., params=...)`** - the full bypass. Hand-build
+  a query with CTEs, joins, window functions, a table function as the source, whatever the canonical `Op`
+  vocabulary can't express - using whatever query-building approach you already have - and you still get
+  back a `QueryContext` that canonical filters/sort/pagination can layer on top of, or that you can use
+  completely as-is.
+* **`HavingMixin`** - filter on an aggregated field after a `GROUP BY` (`SUM(x) > 100`), same canonical
+  `Op`s, routed to `HAVING` instead of `WHERE`: `class TotalAbove(HavingMixin, DataGreaterThanFilter): pass`.
+* **`order_by_raw(expression)`** - for a compound ordering rule (a tiebreak column, multiple sort keys)
+  that a single `field, direction` pair can't represent.
+* **`add_raw_condition(sql_template, **values)`** - a per-filter escape hatch for a backend-specific SQL
+  function (a full-text search builtin, an array operator, ...) with no canonical `Op` equivalent - values
+  are still bound through the driver's real parameter binding, never string-formatted into the SQL text.
+
+Want a different ORM or database driver (Tortoise, Django ORM, raw psycopg2, pymongo, ...)? Write your own
+`QueryContext` + DAO pair the same way `ClickHouseQueryContext`/`ClickHouseDao` do it - see `docs/query.rst`.
+Neither SQLAlchemy nor clickhouse-driver are required to install the package; both are opt-in extras.
 
 ## Features and Readability hand in hand 🤝
 

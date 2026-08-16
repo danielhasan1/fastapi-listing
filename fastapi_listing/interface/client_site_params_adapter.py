@@ -6,7 +6,7 @@ except ImportError:
 from typing import List
 
 
-class ClientSiteParamAdapter(Protocol):
+class ClientSiteParamAdapter(Protocol):  # pragma: no cover - structural type only, never instantiated/called
 
     def get(self, key: str):
         pass

@@ -2,7 +2,9 @@ from fastapi_listing import ListingService, FastapiListing
 from fastapi_listing.filters import generic_filters
 from fastapi_listing.factory import strategy_factory
 from fastapi_listing.strategies import QueryStrategy
-from fastapi_listing.ctyping import FastapiRequest, SqlAlchemyQuery
+from fastapi_listing.context import QueryContext
+from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
+from fastapi_listing.ctyping import FastapiRequest
 from fastapi_listing.dao import dao_factory
 from fastapi_listing import loader
 
@@ -15,15 +17,15 @@ from fastapi_listing.utils import Options
 class DepartmentEmployeesQueryStrategy(QueryStrategy):
 
     def get_query(self, *, request: FastapiRequest = None, dao: DeptEmpDao = None,
-                  extra_context: dict = None) -> SqlAlchemyQuery:
-        return dao.get_emp_dept_mapping_base_query()
+                  extra_context: dict = None) -> QueryContext:
+        return SqlAlchemyQueryContext(dao.get_emp_dept_mapping_base_query())
 
 
 class EmployeesQueryStrategy(QueryStrategy):
 
     def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
-                  extra_context: dict = None) -> SqlAlchemyQuery:
-        return dao.get_employees_with_designations()
+                  extra_context: dict = None) -> QueryContext:
+        return SqlAlchemyQueryContext(dao.get_employees_with_designations())
 
 
 strategy_factory.register_strategy("dept_emp_mapping_query", DepartmentEmployeesQueryStrategy)
@@ -71,15 +73,16 @@ class EmployeeListingService(ListingService):
         return resp
 
 
-class FullNameFilter(generic_filters.CommonFilterImpl):
+class FullNameFilter(generic_filters.CanonicalFilter):
 
-    def filter(self, *, field: str = None, value: dict = None, query=None) -> SqlAlchemyQuery:
+    def filter(self, *, field: str = None, value: dict = None, context: QueryContext = None) -> QueryContext:
         # field is not necessary here as this is a custom filter and user have full control over its implementation
         if value:
             emp_dao: EmployeeDao = dao_factory.create("employee", replica=True)
             emp_ids: list[int] = emp_dao.get_emp_ids_contain_full_name(value.get("search"))
-            query = query.filter(self.dao.model.emp_no.in_(emp_ids))  # noqa
-        return query
+            native = context.native.filter(self.dao.model.emp_no.in_(emp_ids))  # noqa
+            context = context.with_native(native)
+        return context
 
 
 @loader.register()

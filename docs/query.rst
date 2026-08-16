@@ -77,7 +77,7 @@ Writing your own query strategy
     class DepartmentWiseEmployeesQuery(QueryStrategy):
 
         def get_query(self, *, request: FastapiRequest = None, dao: EmployeeDao = None,
-                      extra_context: dict = None) -> SqlAlchemyQuery:
+                      extra_context: dict = None) -> QueryContext:
             # as request and dao args are self explanatory
             # extra_context is a chained variable that can carry contextual data from one place
             # to another place. extremely helpful when passing args from router or client.
@@ -94,18 +94,18 @@ Add your new listing query to employee dao
 .. code-block:: python
 
 
-    from sqlalchemy.orm import Query
+    from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
 
     class EmployeeDao(ClassicDao):
         name = "employee"
         model = Employee
 
-        def get_employees_by_dept(self, dept_no: str) -> Query:
+        def get_employees_by_dept(self, dept_no: str) -> SqlAlchemyQueryContext:
             # assuming we have one to one mapping and we are passing manager department here
             query = self._read_db.query(self.model
                                         ).join(DeptEmp, Employee.emp_no == DeptEmp.emp_no
                                         ).filter(DeptEmp.dept_no == dept_no)
-            return query
+            return SqlAlchemyQueryContext(query)
 
 
 .. code-block:: python
@@ -193,3 +193,98 @@ Second Example
 Personally I mixes both of these when I know strategies are going to be simple I tend to make strategy objects capable of handlind different contexts but
 when I know or see my single strategy class is becoming hard to maintain I tend to breakdown them to handle specefic context at a time as a result having
 single responsibility objects.
+
+Backend-agnostic query objects (SQLAlchemy is no longer the only option)
+--------------------------------------------------------------------------
+
+Every place that used to pass around a raw SQLAlchemy ``Query`` now passes around a ``QueryContext``
+(``fastapi_listing.context.QueryContext``) instead. For the default SQLAlchemy backend this is just a thin
+wrapper - ``SqlAlchemyQueryContext`` - around your existing ``Query``, so ``get_query``/custom ``QueryStrategy``
+methods should return one of these instead of a bare ``Query``:
+
+.. code-block:: python
+
+    from fastapi_listing.context.sqlalchemy import SqlAlchemyQueryContext
+
+    class MyQueryStrategy(QueryStrategy):
+
+        def get_query(self, *, request=None, dao=None, extra_context: dict = None) -> QueryContext:
+            query = dao.get_default_read([...])  # a GenericDao already returns a QueryContext
+            return query
+
+If you need to do something the canonical filter/sort vocabulary doesn't cover (joins, eager loading,
+aggregates, ...), drop down to the raw SQLAlchemy ``Query`` via ``context.native``, mutate it however you like,
+then hand it back via ``context.with_native(new_query)``.
+
+This same ``QueryContext`` contract is what lets FastAPI Listing support non-ORM backends - a
+``ClickHouseQueryContext`` (``fastapi_listing.context.clickhouse``) ships as a reference implementation,
+paired with ``fastapi_listing.dao.ClickHouseDao``, proving the same ``Filter``/``SortingOrderStrategy``/
+``PaginationStrategy`` classes work unmodified against raw parameterized SQL, not just an ORM. See
+:ref:`learnfilters` for how filters stay backend-agnostic through the shared ``Op`` vocabulary.
+
+Escape hatches: when the canonical vocabulary genuinely isn't enough
+---------------------------------------------------------------------
+
+Canonical filters/sort/pagination cover comparisons on a plain column, single-column sort, and
+offset/limit pagination - the common case. Real queries aren't always that simple. ``ClickHouseQueryContext``
+has an escape hatch for each level of "not simple enough":
+
+``from_raw_sql`` - the full bypass
+    .. code-block:: python
+
+        raw_sql = build_my_complicated_query(account_id=..., date_range=...)  # CTEs, joins,
+                                                                                # window functions,
+                                                                                # a table function -
+                                                                                # however you already
+                                                                                # build it
+        context = ClickHouseQueryContext.from_raw_sql(client=my_client, sql=raw_sql, params={...})
+
+    Wraps your query as a derived table. Canonical filters/sort/pagination can still layer ``WHERE``/
+    ``ORDER BY``/``LIMIT`` on top of whatever columns your query exposes - or you can leave ``filter_mapper``
+    empty and let the raw SQL stand entirely as-is. Structural, request-scoped query shape (which account,
+    which date range, how a metric is computed) belongs here, built once by your ``QueryStrategy``/DAO -
+    not something a generic ``Filter`` class should know about.
+
+``HavingMixin`` - filtering on an aggregated field
+    .. code-block:: python
+
+        from fastapi_listing.filters.generic_filters import HavingMixin, DataGreaterThanFilter
+
+        class TotalConversionsAbove(HavingMixin, DataGreaterThanFilter):
+            pass
+
+    Same canonical ``Op`` (``GT``, in this case), routed to ``HAVING`` instead of ``WHERE`` - for filtering
+    on the result of a ``GROUP BY`` (``SUM(x) > 100``), which ``WHERE`` cannot express. Available on
+    ``SqlAlchemyQueryContext`` too (``context.having(field=..., op=..., value=...)``, mirroring ``.having()``
+    on a SQLAlchemy ``Query``).
+
+``order_by_raw`` - a compound ordering rule
+    .. code-block:: python
+
+        context.order_by_raw(f"(site_id = {int(own_domain_id)}) DESC, `{sort_column}` {direction}")
+
+    For an ordering rule that isn't a single ``field, direction`` pair - a tiebreak column pinned first,
+    then the user's chosen sort, or any other multi-key expression the canonical ``order_by()`` can't
+    represent.
+
+``add_raw_condition`` - a backend-specific SQL function, per filter
+    .. code-block:: python
+
+        from fastapi_listing.context.clickhouse import quote_identifier
+
+        class MultiSearchAnyFilter(CanonicalFilter):
+            def filter(self, *, field=None, value=None, context=None):
+                col = quote_identifier(self.extract_field(field))
+                return context.add_raw_condition(
+                    f"multiSearchAnyCaseInsensitive({col}, {{needles}})", needles=value.get("list") or [])
+
+    For a single filter that needs a builtin ClickHouse function (a full-text search primitive, an array
+    operator, ...) with no canonical ``Op`` equivalent. Values still flow through the driver's real
+    parameter binding (``%(name)s``) - never string-formatted into the SQL text - only the resolved
+    field/column identifier is spliced in directly (via ``quote_identifier``), the same way every other
+    op in ``ClickHouseQueryContext`` already handles identifiers vs. values.
+
+The rule of thumb across all four: reach for the narrowest escape hatch that solves your problem.
+Need a different clause or expression for one filter/one sort? Use ``having``/``order_by_raw``/
+``add_raw_condition``. Need a fundamentally different query shape (CTEs, joins, a table function)?
+``from_raw_sql`` is the one that hands you full control.

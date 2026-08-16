@@ -8,6 +8,7 @@ import inspect
 from fastapi_listing.service import ListingService
 from fastapi_listing.factory import filter_factory, _generic_factory, strategy_factory, interceptor_factory
 from fastapi_listing.errors import MissingExpectedAttribute
+from fastapi_listing.abstracts import DaoAbstract
 from fastapi_listing.dao import GenericDao
 
 
@@ -35,8 +36,8 @@ def _validate_dao_attribute(cls: ListingService):
     if not inspect.isclass(cls.default_dao):
         raise ValueError("Invalid Dao reference Injected!")
 
-    if not issubclass(cls.default_dao, GenericDao):  # type: ignore
-        raise TypeError("Invalid Dao Type! Should Be type of GenericDao")
+    if not issubclass(cls.default_dao, DaoAbstract):  # type: ignore
+        raise TypeError("Invalid Dao Type! Should Be type of DaoAbstract")
     return True
 
 

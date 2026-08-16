@@ -144,22 +144,34 @@ Its easy to do as well. You wanna write a filter which does a full name scan com
 
     from fastapi_listing.filters import generic_filters
     from fastapi_listing.dao import dao_factory
+    from fastapi_listing.context import QueryContext
 
-    class FullNameFilter(generic_filters.CommonFilterImpl):
+    class FullNameFilter(generic_filters.CanonicalFilter):
 
-        def filter(self, *, field: str = None, value: dict = None, query=None) -> SqlAlchemyQuery:
+        def filter(self, *, field: str = None, value: dict = None, context: QueryContext = None) -> QueryContext:
             # field is not necessary here as this is a custom filter and user have full control over its implementation
             if value:
                 emp_dao: EmployeeDao = dao_factory.create("employee", replica=True)
                 emp_ids: list[int] = emp_dao.get_emp_ids_contain_full_name(value.get("search"))
-                query = query.filter(self.dao.model.emp_no.in_(emp_ids))
-            return query
+                native = context.native.filter(self.dao.model.emp_no.in_(emp_ids))
+                context = context.with_native(native)
+            return context
 
-As you can see in above filter class we are inheriting from a class which is a part of our ``generic_filters`` module.
-In our filter class we have a single filter method with fixed signature. you will receive your filter value as a dict.
+As you can see in above filter class we are inheriting from ``CanonicalFilter``, part of our ``generic_filters``
+module (``CommonFilterImpl`` is kept as a deprecated alias for one release if you're upgrading existing code).
+In our filter class we have a single filter method with fixed signature - note the last argument is now
+``context`` (a backend-agnostic ``QueryContext``) rather than a raw SQLAlchemy ``query``. When you need SQLAlchemy-specific
+behaviour like a fluent ``.filter()`` chain, use ``context.native`` to reach the underlying ``Query`` and
+``context.with_native(...)`` to hand the mutated query back. you will receive your filter value as a dict.
 We have also used **dao factory**  which allows us to use anywhere dao policy.
 You basically filter your query and return it.
 And just like that voila your custom filter is ready. No need to think how you will call it, this will be handled implicitly by filter mechanics(interceptor).
+
+Most built-in filters don't need any of this: they simply declare a canonical ``op`` (see ``fastapi_listing.ops.Op``)
+and hand off to the context - ``EqualityFilter``, ``InDataFilter`` and the rest of ``generic_filters`` work
+unmodified whether your DAO is backed by SQLAlchemy or a non-ORM backend like the reference ``ClickHouseDao``.
+Write a custom filter with ``context.native`` only when the canonical ``Op`` vocabulary genuinely can't express
+what you need.
 
 Why do we need an interceptor? Just bear with this example to have an idea of when you may wanna use or write your own interceptor.
 

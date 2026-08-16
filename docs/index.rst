@@ -13,8 +13,10 @@ a highly extensible, decoupled and reusable interface.
 **Component** based Plug & Play architecture allows you to write easy to use and more **quickly** readable block of code.
 Inject dependencies or swap components as you write more and more complex logics.
 
-It uses `SQLAlchemy <https://en.wikipedia.org/wiki/SQLAlchemy>`_ sqltool at the time but have potential to support multiple ORMs/database
-toolkits and that will be coming soon like mongoengine 📝.
+It ships with SQLAlchemy support out of the box, but the Filter/Sorter/Paginator/QueryStrategy contracts are
+backend-agnostic (see the *Customising your listing query* guide) - a non-ORM ClickHouse backend ships as a
+reference implementation proving the same abstraction works for raw parameterized SQL too, and the same
+approach extends to other ORMs/database toolkits.
 
 Features
 --------

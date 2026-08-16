@@ -1,8 +1,9 @@
 from typing import List, Dict
 
 from fastapi_listing.abstracts import AbstractSorterInterceptor
+from fastapi_listing.errors import guard_legacy_signature
 from fastapi_listing.sorter import SortingOrderStrategy
-from fastapi_listing.ctyping import SqlAlchemyQuery
+from fastapi_listing.context import QueryContext
 
 
 class IndiSorterInterceptor(AbstractSorterInterceptor):
@@ -18,8 +19,13 @@ class IndiSorterInterceptor(AbstractSorterInterceptor):
         # conditional sorting where if one param is applied then don't apply another specific one, etc.
     """
 
-    def apply(self, *, query: SqlAlchemyQuery = None, strategy: SortingOrderStrategy = None,
-              sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> SqlAlchemyQuery:
+    def apply(self, *, context: QueryContext = None, strategy: SortingOrderStrategy = None,
+              sorting_params: List[Dict[str, str]] = None, extra_context: dict = None) -> QueryContext:
         latest = sorting_params[-1]
-        query = strategy.sort(query=query, value=latest, extra_context=extra_context)
-        return query
+        guard_legacy_signature(
+            strategy.sort, legacy_kwarg="query", new_kwarg="context",
+            subject=f"Custom sorting strategy {type(strategy).__name__!r}",
+            fix="Rename its 'query' parameter to 'context'; delegate to context.order_by(...) "
+                "instead of calling .order_by() directly.")
+        context = strategy.sort(context=context, value=latest, extra_context=extra_context)
+        return context

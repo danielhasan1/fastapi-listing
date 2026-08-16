@@ -1,14 +1,15 @@
 from abc import ABCMeta, abstractmethod
-from typing import Union, Dict, List
-from fastapi_listing.ctyping import SqlAlchemyModel
+from typing import Any
 
 
 class DaoAbstract(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def model(self) -> SqlAlchemyModel:
-        pass
+    def model(self) -> Any:
+        """The schema/model this DAO reads and writes. A SQLAlchemy
+        declarative class for the default backend, or any plain
+        column-name descriptor for a non-ORM backend (e.g. ClickHouseDao)."""
 
     @property
     @abstractmethod
@@ -16,7 +17,7 @@ class DaoAbstract(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def create(self, values) -> SqlAlchemyModel:
+    def create(self, values) -> Any:
         pass
 
     @abstractmethod
@@ -24,7 +25,7 @@ class DaoAbstract(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def read(self, identifier, fields) -> SqlAlchemyModel:
+    def read(self, identifier, fields) -> Any:
         pass
 
     @abstractmethod

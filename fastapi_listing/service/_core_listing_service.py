@@ -2,11 +2,11 @@ from typing import Type, Optional, Dict, List
 from warnings import warn
 
 from fastapi import Request
-from sqlalchemy.orm import Query
 
+from fastapi_listing.context import QueryContext
 from fastapi_listing.dao.generic_dao import GenericDao
 from fastapi_listing.errors import FastapiListingRequestSemanticApiException, \
-    NotRegisteredApiException, FastAPIListingWarning
+    NotRegisteredApiException, FastAPIListingWarning, FastapiListingMigrationError
 from fastapi_listing.factory import interceptor_factory, strategy_factory
 from fastapi_listing.interface.listing_meta_info import ListingMetaInfo
 from fastapi_listing.ctyping import BasePage
@@ -58,7 +58,7 @@ class FastapiListing(ListingBase):
                 raise ValueError("invalid field mapper")
         return req_params
 
-    def _apply_sorting(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
+    def _apply_sorting(self, query: QueryContext, listing_meta_info: ListingMetaInfo) -> QueryContext:
         try:
             sorting_params: List[dict] = listing_meta_info.feature_params_adapter.get("sort")
         except Exception:
@@ -67,7 +67,7 @@ class FastapiListing(ListingBase):
             listing_meta_info.sorting_column_mapper.keys())
         if temp:
             raise NotRegisteredApiException(
-                status_code=409, detail=f"Sorter(s) not registered with listing: {temp}, Did you forget to do it?")
+                status_code=422, detail=f"Sorter(s) not registered with listing: {temp}, Did you forget to do it?")
         if sorting_params:
             sorting_params = self._replace_aliases(listing_meta_info.sorting_column_mapper, sorting_params)
         else:
@@ -76,14 +76,14 @@ class FastapiListing(ListingBase):
         def launch_mechanics(qry):
             mecha: str = listing_meta_info.sorter_mechanic
             mecha_obj = interceptor_factory.create(mecha)
-            qry = mecha_obj.apply(query=qry, strategy=listing_meta_info.sorting_strategy,
+            qry = mecha_obj.apply(context=qry, strategy=listing_meta_info.sorting_strategy,
                                   sorting_params=sorting_params, extra_context=listing_meta_info.extra_context)
             return qry
 
         query = launch_mechanics(query)
         return query
 
-    def _apply_filters(self, query: Query, listing_meta_info: ListingMetaInfo) -> Query:
+    def _apply_filters(self, query: QueryContext, listing_meta_info: ListingMetaInfo) -> QueryContext:
         try:
             fltrs: List[dict] = listing_meta_info.feature_params_adapter.get("filter")
         except Exception:
@@ -92,20 +92,20 @@ class FastapiListing(ListingBase):
         temp = set(item.get("field") for item in fltrs) - set(listing_meta_info.filter_column_mapper.keys())
         if temp:
             raise NotRegisteredApiException(
-                status_code=409, detail=f"Filter(s) not registered with listing: {temp}, Did you forget to do it?")
+                status_code=422, detail=f"Filter(s) not registered with listing: {temp}, Did you forget to do it?")
 
         fltrs = self._replace_aliases(listing_meta_info.filter_column_mapper, fltrs)
 
         def launch_mechanics(qry):
             mecha_obj = interceptor_factory.create(listing_meta_info.filter_mechanic)
-            qry = mecha_obj.apply(query=qry, filter_params=fltrs, dao=self.dao,
+            qry = mecha_obj.apply(context=qry, filter_params=fltrs, dao=self.dao,
                                   request=self.request, extra_context=listing_meta_info.extra_context)
             return qry
 
         query = launch_mechanics(query)
         return query
 
-    def _paginate(self, query: Query, listing_meta_info: ListingMetaInfo) -> BasePage:
+    def _paginate(self, query: QueryContext, listing_meta_info: ListingMetaInfo) -> BasePage:
         try:
             raw_params: List[dict] = listing_meta_info.feature_params_adapter.get("pagination")
             page_params = raw_params if raw_params else {"page": 1, "pageSize": listing_meta_info.default_page_size}
@@ -127,18 +127,22 @@ class FastapiListing(ListingBase):
                                                               extra_context=listing_meta_info.extra_context)
         return page
 
-    def _prepare_query(self, listing_meta_info: ListingMetaInfo) -> Query:
-        base_query: Query = listing_meta_info.query_strategy.get_query(request=self.request,
-                                                                       dao=self.dao,
-                                                                       extra_context=listing_meta_info.extra_context)
+    def _prepare_query(self, listing_meta_info: ListingMetaInfo) -> QueryContext:
+        base_query: QueryContext = listing_meta_info.query_strategy.get_query(
+            request=self.request, dao=self.dao, extra_context=listing_meta_info.extra_context)
         if base_query is None or not base_query:
-            raise ValueError("query strategy returned nothing Query object is expected!")
-        fltr_query: Query = self._apply_filters(base_query,
+            raise ValueError("query strategy returned nothing QueryContext object is expected!")
+        if not isinstance(base_query, QueryContext):
+            raise FastapiListingMigrationError(
+                f"Custom query strategy {type(listing_meta_info.query_strategy).__name__!r} "
+                f"returned a raw {type(base_query).__name__!r} instead of a QueryContext. "
+                "Wrap it, e.g. return SqlAlchemyQueryContext(<your raw query>).")
+        fltr_query: QueryContext = self._apply_filters(base_query,
                                                 listing_meta_info)
         if listing_meta_info.extra_context.get(Options.abort_sorting.value):
             return fltr_query
 
-        srtd_query: Query = self._apply_sorting(fltr_query, listing_meta_info)
+        srtd_query: QueryContext = self._apply_sorting(fltr_query, listing_meta_info)
         return srtd_query
 
     @staticmethod
@@ -182,6 +186,6 @@ class FastapiListing(ListingBase):
                                         custom_fields=self.custom_fields
                                         )
         listing_meta_info = self._build_from_meta_data(listing_meta_data)
-        fnl_query: Query = self._prepare_query(listing_meta_info)
+        fnl_query: QueryContext = self._prepare_query(listing_meta_info)
         response: BasePage = self._paginate(fnl_query, listing_meta_info)
         return response
