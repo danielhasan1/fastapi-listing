@@ -37,6 +37,49 @@ Although its better to use ``model.field`` convention like we used in filter map
 Just like filter interceptor you also have an option of sorter interceptor where you could interrupt the default behaviour of applying sort on your query
 and customise how you may wanna apply multi field sorting on your query.
 
+Sorting on a computed or aggregated field (e.g. a CTE)
+-------------------------------------------------------
+
+``sort_mapper``'s callable form (above) resolves a field once, at class-definition time - that works for
+a joined table's column, but not for a column that only exists on a query built per-request, such as a
+CTE aggregating a metric. For that, write a custom sorting strategy that reads the column back from
+``extra_context`` instead of the static model - stash it there from your ``QueryStrategy`` when you build
+the CTE, since both ``get_query()`` and ``sort()`` receive the same ``extra_context`` dict for a given
+request:
+
+.. code-block:: python
+
+    from fastapi_listing.abstracts import AbsQueryStrategy, AbsSortingStrategy
+    from fastapi_listing.context import QueryContext
+    from fastapi_listing.factory import strategy_factory
+
+    class EmployeeMetricsQueryStrategy(AbsQueryStrategy):
+        def get_query(self, *, request=None, dao=None, extra_context=None) -> QueryContext:
+            context = dao.get_default_read(...)  # builds/joins your CTE
+            extra_context["metrics_cte"] = ...    # keep a handle to the CTE for the sort stage
+            return context
+
+    class ComputedFieldSortingStrategy(AbsSortingStrategy):
+        def sort(self, *, context: QueryContext = None, value=None, extra_context=None) -> QueryContext:
+            cte = extra_context["metrics_cte"]
+            column = getattr(cte.c, value["field"])
+            return context.order_by(field=column, direction=value["type"])
+
+    strategy_factory.register_strategy("employee_metrics_query", EmployeeMetricsQueryStrategy)
+    strategy_factory.register_strategy("computed_field_sorter", ComputedFieldSortingStrategy)
+
+    @loader.register()
+    class EmployeeListingService(ListingService):
+        query_strategy = "employee_metrics_query"
+        sorting_strategy = "computed_field_sorter"
+        sort_mapper = {
+            "indexedpages": "total_indexed_pages",
+        }
+
+``context.order_by()`` works with any SQLAlchemy column-like object - a CTE's labeled column included,
+not just a mapped model attribute - so no library change is needed to sort on one; only a sorting
+strategy that knows where to find it.
+
 How FastAPI Listing reads sorter params:
 
 ``[{"field":"alias", "type":"asc"}]`` or ``[{"field":"alias", "type":"dsc"}]`` 📝
