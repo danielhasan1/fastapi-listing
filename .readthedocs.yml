@@ -15,15 +15,17 @@ build:
     # rust: "1.64"
     # golang: "1.19"
 
-# Build documentation in the ex-docs/ directory with Sphinx
+# Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/conf.py
 
-# If using Sphinx, optionally build your ex-docs in additional formats such as PDF
+# If using Sphinx, optionally build your docs in additional formats such as PDF
 # formats:
 #    - pdf
 
-# Optionally declare the Python requirements required to build your ex-docs
-# python:
-#    install:
-#    - requirements: ex-docs/requirements.txt
+# Python requirements required to build the docs (sphinx_rtd_theme, used by
+# docs/conf.py, isn't installed by default - without this the build fails
+# with ModuleNotFoundError: sphinx_rtd_theme)
+python:
+   install:
+   - requirements: docs/requirements.txt
