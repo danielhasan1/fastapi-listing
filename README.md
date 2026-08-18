@@ -1,6 +1,7 @@
 # fastapi-listing
 
-Advanced items listing library that gives you freedom to design really complex listing APIs using component based architecture.
+A listing API library for FastAPI, built around small, composable components rather than one large
+endpoint function.
 
 [![.github/workflows/deploy.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/deploy.yml)
 [![.github/workflows/tests.yml](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml/badge.svg)](https://github.com/danielhasan1/fastapi-listing/actions/workflows/tests.yml) ![PyPI - Programming Language](https://img.shields.io/pypi/pyversions/fastapi-listing.svg?color=%2334D058)
@@ -11,38 +12,34 @@ Advanced items listing library that gives you freedom to design really complex l
 > unaffected. See [CHANGELOG.md](CHANGELOG.md) for the migration table.
 
 Comes with:
-- pre defined filters
-- pre defined paginator
-- pre defined sorter
+- a predefined set of filters
+- a predefined paginator
+- a predefined sorter
 - SQLAlchemy support out of the box, and a backend-agnostic core so you're not locked into one ORM
 
-## Advantage
-- simplify the intricate process of designing and developing complex listing APIs
-- Design components(USP) and plug them from anywhere
-- Components can be **reusable**
-- Best for fast changing needs
+## Why
+
+- Simplifies designing and maintaining complex listing APIs
+- Components are independent, reusable, and can be swapped in from anywhere
+- Well suited to fast-changing requirements
 - Not an ORM captive: filters/sorter/paginator are written against a small `QueryContext` contract, not a raw SQLAlchemy `Query` - swap in a different backend without rewriting your filters
 
 ## Installing
 
 Using [pip](https://pip.pypa.io/):
 
-```python
+```bash
 pip install fastapi-listing
 ```
 
-## Quick Example
+## Quick example
 
-Attaching example of it running against the [mysql employee db](https://dev.mysql.com/doc/employee/en/) 
+The example below runs against the [MySQL employee sample DB](https://dev.mysql.com/doc/employee/en/).
 
-There are two ways to implement a listing API using fastapi listing
+There are two ways to implement a listing API with this library: **inline** or **class-based**. Both
+need a DAO (data access object) class.
 
-- inline implementation
-- class based implementation
-
-for both we will be needing a dao(data access object) class
-
-### First let's look at inline implementation.
+### Inline implementation
 
 ```python
 # main.py
@@ -76,9 +73,9 @@ class Employee(Base):
 
 # Dao class
 class EmployeeDao(GenericDao):
-    """write your data layer access logic here. keep it raw!"""
+    """Data access logic lives here - keep it raw."""
     name = "employee"
-    model = Employee # sqlalchemy model class. Not on SQLAlchemy? See "Backend support" below.
+    model = Employee  # SQLAlchemy model class. Not on SQLAlchemy? See "Backend support" below.
 
 
 class EmployeeListDetails(BaseModel):
@@ -92,43 +89,49 @@ class EmployeeListDetails(BaseModel):
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
-    
+
 
 @app.get("/employees", response_model=ListingPage[EmployeeListDetails])
 def get_employees(db: Session):
     dao = EmployeeDao(read_db=db)
-    # passing pydantic serializer is optional, automatically generates a
-    # select query based on pydantic class fields for easy cases like columns of same table
-    # if not passed then provide a select query in dao layer
-    return FastapiListing(dao=dao, pydantic_serializer=EmployeeListDetails 
-                          ).get_response(MetaInfo(default_srt_on="emp_no")) # by default sort in desc order
-    # let's say pydantic class contains compute fields then pass custom_fields=True (by default False)
+    # passing a pydantic serializer is optional - it generates a select query from the
+    # serializer's fields for simple cases (columns all on the same table); otherwise
+    # provide the select query yourself in the DAO layer
+    return FastapiListing(dao=dao, pydantic_serializer=EmployeeListDetails
+                          ).get_response(MetaInfo(default_srt_on="emp_no"))  # sorts descending by default
+```
+
+If your Pydantic model has computed fields (fields with no matching column), pass `custom_fields=True` to
+avoid an "unknown attribute" error:
+
+```python
+@app.get("/employees", response_model=ListingPage[EmployeeListDetails])
+def get_employees(db: Session):
+    dao = EmployeeDao(read_db=db)
     return FastapiListing(dao=dao,
                           pydantic_serializer=EmployeeListDetails,
-                          custom_fields=True # here setting custom field True to avoid unknown attributes error
+                          custom_fields=True
                           ).get_response(MetaInfo(default_srt_on="emp_no"))
 ```
 
-Voila 🎉 your very first listing response
+That's your first listing response.
 
 ![](https://drive.google.com/uc?export=view&id=1amgrAdGP7WvXfiNlCYJZPC9fz4_1CidE)
 
-
-Auto generated query  doesn't fulfil your use case❓️
+If the auto-generated query doesn't fit your use case, override `get_default_read` in the DAO instead:
 
 ```python
 # Overwriting default read method in dao class
 class EmployeeDao(GenericDao):
-    """write your data layer access logic here. keep it raw!"""
+    """Data access logic lives here - keep it raw."""
     name = "employee"
     model = Employee
-    
+
     def get_default_read(self, fields_to_read: Optional[list]):
         """
         Extend and return your query from here.
-        Use it when use cases are comparatively easier than complex.
-        Alternatively fastapi-listing provides a robust way to write performance packed queries 
-        for complex APIs which we will look at later.
+        Use this when the use case is simpler than a full custom query strategy;
+        for more complex cases, see the query-customisation docs.
         """
         query = self._read_db.query(Employee)
         return query
@@ -137,77 +140,75 @@ class EmployeeDao(GenericDao):
 @app.get("/employees", response_model=ListingPage[EmployeeListDetails])
 def get_employees(db: Session):
     dao = EmployeeDao(read_db=db)
-    # note we removed all optional named params here
+    # note the optional named params are gone here
     return FastapiListing(dao=dao).get_response(MetaInfo(default_srt_on="emp_no"))
 ```
 
 
-# Adding client site features
+## Adding client-site features
 
-Django admin users gonna love filter feature. But before that lets do a little setup which no once can avoid to support a broad spectrum of clients unless you use native query param format which I doubt.
+Before adding filters, sorters, or pagination, most existing services need one bit of setup: an adapter
+that reads your client's actual request-parameter format, unless it already matches FastAPI Listing's
+native format exactly.
 
-## Add your custom adaptor class for reading filter/sorter/paginator client request params
+### Add a custom adapter for reading filter/sorter/paginator parameters
 
-Below is the default implementation. You will be writing your own adaptor definition
+Below is the default implementation - you'll typically extend it with your own parameter format.
 
 ```python
 from typing import Literal
 from fastapi_listing.service.adapters import CoreListingParamsAdapter
 from fastapi_listing import utils
 
-class YourAdapterClass(CoreListingParamsAdapter): # Extend to add your behaviour
-    """Utilise this adapter class to make your remote client site:
-    - filter,
-    - sorter,
-    - paginator.
-    query params adapt to fastapi listing library.
-    With this you can utilise same listing api to multiple remote client
-    even if it's a front end server or other backend server.
+class YourAdapterClass(CoreListingParamsAdapter):  # extend to add your own behavior
+    """Adapts your client's filter/sorter/paginator query params to what FastAPI
+    Listing expects natively. This lets the same listing API serve multiple
+    clients - a frontend, another backend service, whatever - each using their
+    own parameter format.
 
-    fastapi listing is always going to request one of the following fundamental key if you want to use it
+    FastAPI Listing looks for up to three keys:
     - sort
     - filter
     - pagination
 
-    supported formats for
+    Supported formats:
+
     filter:
-    simple filter - [{"field":"<key used in filter mapper>", "value":{"search":"<client param>"}}, ...]
-    if you are using a range filter -
-    [{"field":"<key used in filter mapper>", "value":{"start":"<start range>", "end": "<end range>"}}, ...]
-    if you are using a list filter i.e. search on given items
-    [{"field":"<key used in filter mapper>", "value":{"list":["<client params>"]}}, ...]
+      single value  - [{"field": "<key in filter_mapper>", "value": {"search": "<client value>"}}, ...]
+      range         - [{"field": "<key in filter_mapper>", "value": {"start": "<start>", "end": "<end>"}}, ...]
+      list          - [{"field": "<key in filter_mapper>", "value": {"list": ["<values>"]}}, ...]
 
     sort:
-    [{"field":<"key used in sort mapper>", "type":"asc or "dsc"}, ...]
-    by default single sort allowed you can change it by extending sort interceptor
+      [{"field": "<key in sort_mapper>", "type": "asc" | "dsc"}, ...]
+      single-field sort by default; extend the sort interceptor for multi-field sort.
 
     pagination:
-    {"pageSize": <integer page size>, "page": <integer page number 1 based>}
+      {"pageSize": <int>, "page": <int, 1-based>}
     """
-    
+
     def get(self, key: Literal["sort", "filter", "pagination"]):
         """
         @param key: Literal["sort", "filter", "pagination"]
-        @return: List[Optional[dict]] for filter/sort and dict for paginator
+        @return: List[Optional[dict]] for filter/sort, dict for pagination
         """
         return utils.dictify_query_params(self.dependency.get(key))
 
 ```
-### Once your adaptor class is set
- 
-## Adding filter feature
 
-➡️ lets add filters on Employee for:
-1.  gender - return only **Employees** belonging to 'X' gender where X could be anything.
-2.  DOB - return **Employees** belonging to a specific range of DOB.
-3.  First Name - return **Employees** only starting with specific first names.
+### Adding filters
+
+Add filters on `Employee` for:
+1. **gender** - only employees matching a given gender
+2. **date of birth** - employees within a date range
+3. **first name** - employees whose first name starts with a given value
+
 ```python
 from fastapi import Request
 from sqlalchemy.orm import Session
 
 from fastapi_listing.paginator import ListingPage
-from fastapi_listing.filters import generic_filters # collection of inbuilt filters
-from fastapi_listing.factory import filter_factory # register filter against a listing
+from fastapi_listing.filters import generic_filters  # collection of inbuilt filters
+from fastapi_listing.factory import filter_factory  # register a filter mapper for use
 from fastapi_listing import MetaInfo, FastapiListing
 
 
@@ -226,12 +227,16 @@ def get_employees(request: Request, db: Session):
         MetaInfo(default_srt_on="emp_no",
                  filter_mapper=emp_filter_mapper,
                  feature_params_adapter=YourAdapterClass))
-    
-    # or you dont wanna pass request?
-    # extract required data from reqeust and pass it directly 
+```
+
+If you'd rather not pass the request object through, extract what you need and pass it directly instead:
+
+```python
+@app.get("/employees", response_model=ListingPage[EmployeeListDetails])
+def get_employees(request: Request, db: Session):
     params = request.query_params
     filter_, sort_, pagination = params.get("filter"), params.get("sort"), params.get("paginator")
-    
+
     dao = EmployeeDao(read_db=db)
     return FastapiListing(dao=dao).get_response(
         MetaInfo(default_srt_on="emp_no",
@@ -240,22 +245,21 @@ def get_employees(request: Request, db: Session):
                  filter=filter_,
                  sort=sort_,
                  paginator=pagination))
-    
 ```
 
-### Let's break it down
+### Breaking it down
 
-**Filter mapper** - a collection of allowed filters on your listing API. Any request outside of this mapper scope
-will not be executed for filtering safeguarding you from creepy API users.
+**Filter mapper** - the set of filters allowed on this listing API. A request for anything outside this
+mapper is simply not executed, which keeps clients from probing for fields you didn't intend to expose.
 
-`generic_filters` a collection of inbuilt filters supported by sqlalchemy orm
-A dictionary is defined with structure:
+`generic_filters` is a collection of inbuilt filters supported by the SQLAlchemy ORM. The mapper's
+structure:
 
 `{"alias": tuple("sqlalchemy_model.field", filter_implementation)}`
 
-`alias` - A string used by client in case if you wanna avoid actual column names to client site.
+`alias` - what the client sends, so the real column name never has to be exposed.
 
-`tuple` - will contain two items field name and filter implementation
+`tuple` - the field name and the filter implementation.
 
 ```python
 from fastapi_listing.filters import generic_filters
@@ -268,27 +272,27 @@ emp_filter_mapper = {
 }
 ```
 
-Register the above mapper with filter factory. 
+Register the mapper with the filter factory, at module level:
 
 ```python
 from fastapi_listing.factory import filter_factory
 
 
-filter_factory.register_filter_mapper(emp_filter_mapper) # Register in global space or module level.
+filter_factory.register_filter_mapper(emp_filter_mapper)
 ```
 
-A client could request you like `v1/employees?filter=[{"gdr":"M"}]`
+A client could then request `v1/employees?filter=[{"gdr":"M"}]`, which your adapter parses into
+`[{"field":"gdr", "value":{"search":"M"}}]` - if the adapter is given kwargs directly rather than the
+request, access them via `self.extra_context`; if it's given the request, access `self.request`
+directly.
 
-parse the above query_param in your adapter class like `[{"field":"gdr", "value":{"search":"M"}}]` if passed externally as kwarg then access it via `self.extra_context` in your adapter class or if passed request then
-access `self.request` directly there.
+That produces a response filtered to rows where `gender` is `M`.
 
-Assuming everything goes right above will produce a response with items filtered on gender field matching rows with 'M'
+**Sort mapper** - the set of fields allowed for sorting; a request for anything outside this mapper is
+not permitted.
 
-**Sort Mapper** - a collection of allowed sort on listing any request outside of this mapper scope will
-not be permitted for sort.
-
-Simply define a dictionary with structure `{"alias": "field"}` if sorting on same column them omit model name &
-if sorting on a joined table column then add sqlalchemy class name like we did for filter `{"alias":"sqlalchemy_model.field"}`
+Structure: `{"alias": "field"}` - omit the model name when sorting on the primary model's own column, or
+qualify it (`{"alias": "sqlalchemy_model.field"}`) for a joined table's column, same as with filters.
 
 ```python
 listing_sort_mapper = {
@@ -303,7 +307,7 @@ return FastapiListing(dao=dao).get_response(
                  sort=sort_,
                  paginator=pagination))
 
-# OR if passing request obj
+# or, passing the request object instead
 return FastapiListing(request=request, dao=dao).get_response(
         MetaInfo(default_srt_on="emp_no",
                  filter_mapper=emp_filter_mapper,
@@ -311,32 +315,33 @@ return FastapiListing(request=request, dao=dao).get_response(
                  feature_params_adapter=YourAdapterClass))
 ```
 
-A client could request you like `v1/employees?sort={"code":<some_code:int>}` or followed by filter `v1/employees?filter=[{"gdr":"M"}]&sort={"code":<some_code:int>, "type":"asc"}` 
-and the response should contain list items sorted by employee code column in ascending order.
+A client could then request `v1/employees?sort={"code":<some_code:int>}`, or combine it with a filter -
+`v1/employees?filter=[{"gdr":"M"}]&sort={"code":<some_code:int>, "type":"asc"}` - and the response would
+be sorted by employee code, ascending.
 
-**Note** we didn't registered sort mapper like we did for filter mapper.
+**Note**: unlike the filter mapper, the sort mapper doesn't need to be registered with a factory.
 
-Similarly, for paginator `v1/employees?pagination={"page":1, "pageSize":10}` or followed by filter and sort `v1/employees?filter=[{"gdr":"M"}]&sort={"code":<some_code:int>, "type":"asc"}&pagination={"page":1, "pageSize":10}`
+Pagination works the same way: `v1/employees?pagination={"page":1, "pageSize":10}`, or combined with
+filter and sort - `v1/employees?filter=[{"gdr":"M"}]&sort={"code":<some_code:int>, "type":"asc"}&pagination={"page":1, "pageSize":10}`.
 
-Above will produce listing page of items 10 or dynamically client could change page size.
+That returns a page of 10 items, or however many the client requests via `pageSize`.
 
-One thing to **Note** here is fastapi listing by default limits the client to reuqest maximum of 50 items at a time to safeguard your database 
-if you want to increase/decrease this default limit then simply pass the limit in `MetaInfo`
-
-**You can also change the default page size from 10 to anything you would want**
+By default, FastAPI Listing caps a single request at 50 items to protect the database. Change that (and
+the default page size) via `MetaInfo`:
 
 ```python
 return FastapiListing(request=request, dao=dao).get_response(
         MetaInfo(default_srt_on="emp_no",
                  filter_mapper=emp_filter_mapper,
                  sort_mapper=listing_sort_mapper,
-                 max_page_size=25, # here change max page size
-                 default_page_size=10, # here change default page size
+                 max_page_size=25,       # cap on requested page size
+                 default_page_size=10,   # page size when the client doesn't specify one
                  feature_params_adapter=YourAdapterClass))
 ```
 
-### Class Based implementation
-Quick Example to convey the context
+### Class-based implementation
+
+The same listing API, structured as a class:
 
 ```python
 from fastapi import FastAPI
@@ -362,25 +367,25 @@ class Title(Base):
 
     employee = relationship('Employee')
 
-    
+
 class EmployeeDao(GenericDao):
     name = "employee"
     model = Employee
-    
+
 class TitleDao(GenericDao):
     name = "title"
     model = Title
-    
+
 @loader.register()
 class EmployeeListingService(ListingService):
-    """Class based listing API implementation"""
+    """Class-based listing API implementation"""
     filter_mapper = {
         "gdr": ("Employee.gender", generic_filters.EqualityFilter),
         "bdt": ("Employee.birth_date", generic_filters.MySqlNativeDateFormateRangeFilter),
         "fnm": ("Employee.first_name", generic_filters.StringStartsWithFilter),
         "lnm": ("Employee.last_name", generic_filters.StringEndsWithFilter),
-        # below feature will require customisation to work at query level
-        "desg": ("Employee.Title.title", generic_filters.StringLikeFilter, lambda x: getattr(Title, x)) # registering filter with joined table field
+        # a joined-table field needs a resolver, same as in the query-customisation docs
+        "desg": ("Employee.Title.title", generic_filters.StringLikeFilter, lambda x: getattr(Title, x))
     }
 
     sort_mapper = {
@@ -390,35 +395,33 @@ class EmployeeListingService(ListingService):
     default_dao = EmployeeDao
 
     def get_listing(self):
-        # similar to above inline but instead of passing meta info uncompressed we pass self
-        # rest is handled implicityly like filter register
-        # one advantage here is every expect is validated so you get error when running server
+        # same idea as the inline version, but MetaInfo is populated from self
+        # rather than passed explicitly - filter/sort registration is handled implicitly,
+        # and @loader.register() validates the whole definition at startup
         resp = FastapiListing(self.request, self.dao, pydantic_serializer=EmployeeListDetails).get_response(self.MetaInfo(self))
         return resp
 
-    
+
 @app.get("/employees", response_model=ListingPage[EmployeeListDetails])
 def get_employees(db: Session):
     return EmployeeListingService(read_db=db).get_listing()
 ```
 
-Check out [docs](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#adding-filters-to-your-listing-api) for supported list of filters.
-Additionally, you can create **custom filters** as well.
+See the [docs](https://fastapi-listing.readthedocs.io/en/latest/tutorials.html#adding-filters-to-your-listing-api)
+for the full list of supported filters. You can also write your own custom filters.
 
-## Provided features are not meeting your requirements???
+## Need something the built-ins don't cover?
 
-The Applications are endless with customisations
+You can write a custom:
 
-➡️ You can write custom:
-
-* Query
+* Query strategy
 * Filter
 * Sorter
 * Paginator
 
-You can check out customisation section in docs after going through basics and tutorials.
+See the customisation section of the docs, after basics and tutorials.
 
-Check out my other [repo](https://github.com/danielhasan1/test-fastapi-listing/blob/master/app/router/router.py) to see some examples
+A second, example-focused repo is available [here](https://github.com/danielhasan1/test-fastapi-listing/blob/master/app/router/router.py).
 
 ## Backend support
 
@@ -434,7 +437,7 @@ parameterized SQL via `clickhouse-driver`, no ORM at all. The same `generic_filt
 against it completely unmodified, because they only ever talk to the `QueryContext`, never to SQLAlchemy
 directly.
 
-```python
+```bash
 pip install fastapi-listing[clickhouse]
 ```
 
@@ -459,25 +462,18 @@ Want a different ORM or database driver (Tortoise, Django ORM, raw psycopg2, pym
 `QueryContext` + DAO pair the same way `ClickHouseQueryContext`/`ClickHouseDao` do it - see `docs/query.rst`.
 Neither SQLAlchemy nor clickhouse-driver are required to install the package; both are opt-in extras.
 
-## Features and Readability hand in hand 🤝
+## Design goals
 
- - Well defined interface for filter, sorter, paginator
- - Support Dependency Injection for easy testing
- - Room to adapt the existing remote client query param semantics
- - Write standardise listing APIs that will be understood by generations of upcoming developers
- - Write listing features which is easy on human mind to extend or understand
- - Break down the most complex listing data APIs into digestible piece of code 
+- A well-defined interface for filter, sorter, and paginator
+- Dependency injection, for easy testing
+- Adapters, so an existing client's query-param format doesn't have to change
+- Listing APIs that stay legible as they grow, rather than accumulating branches over time
 
-Why readability and code quality matters in one picture...
+## Documentation
 
-<img src="https://drive.google.com/uc?export=view&id=1C2ZHltxpdyq4YmBsnbOu4HF9JGt6uMfQ" width="600" height="600"/>
-
-# Documentation
-View full documentation at: https://fastapi-listing.readthedocs.io (A work in progress)
+Full documentation: https://fastapi-listing.readthedocs.io (a work in progress)
 
 
+## Feedback and questions
 
-# Feedback, Questions?
-
-Any form of feedback and questions are welcome! Please create an issue  💭
-[here](https://github.com/danielhasan1/fastapi-listing/issues/new).
+Feedback and questions are welcome - please [open an issue](https://github.com/danielhasan1/fastapi-listing/issues/new).
